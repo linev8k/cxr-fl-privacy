@@ -1,0 +1,12 @@
+{
+  "front_lat": "frontal",
+  "nnClassCount": 14,
+  "policy": "ones",
+
+  "imgtransResize": 224,
+  "random_seed": 206,
+
+  "pre_trained": false,
+  "batch_size": 16,
+  "epochs": 3
+}

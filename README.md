@@ -2,6 +2,13 @@
 
 The project explores the application of mechanisms to defend a federated learning model against reconstruction attacks and enhance privacy.
 
+# Script Usage Examples
+
+chexpert_preprocessing.py  
+```sh
+python3 chexpert_preprocessing.py config.json
+```
+
 
 ## Acknowledgments
 
