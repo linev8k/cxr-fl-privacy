@@ -1,3 +1,7 @@
+#set which GPUs to use
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = '1, 2, 3' # should do this before importing torch modules!
+
 import pandas as pd
 import argparse
 import json
@@ -24,6 +28,8 @@ def main():
     args = parser.parse_args()
     with open(args.cfg_path) as f:
         cfg = json.load(f)
+
+    check_gpu_usage(use_gpu)
 
     #TODO configure randomness
     random_seed = cfg['random_seed']
@@ -72,7 +78,12 @@ def main():
 
 
 
+def check_gpu_usage(use_gpu):
+    assert use_gpu is True, "GPU not used"
+    assert torch.cuda.device_count() == len(os.environ["CUDA_VISIBLE_DEVICES"]), "Wrong number of GPUs available to Pytorch"
+    print(f"{torch.cuda.device_count} GPUs available")
 
+    return True
 
 
 if __name__ == "__main__":
