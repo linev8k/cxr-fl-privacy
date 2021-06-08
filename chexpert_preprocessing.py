@@ -13,7 +13,7 @@ import pandas as pd
 def main():
 
     parser = argparse.ArgumentParser(formatter_class = argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('cfg_path', metavar='CFG_PATH', type = str, help = 'Path to the config file in json format.')
+    parser.add_argument('cfg_path', type = str, help = 'Path to the config file in json format.')
     args = parser.parse_args()
     with open(args.cfg_path) as f:
         cfg = json.load(f)

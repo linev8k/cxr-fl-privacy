@@ -1,14 +1,18 @@
+
+"""Train a model using federated learning"""
+
 #set which GPUs to use
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = '1, 2, 3' # should do this before importing torch modules!
+os.environ["CUDA_VISIBLE_DEVICES"] = '1, 2, 3' #configure this
 
 import pandas as pd
 import argparse
 import json
 from PIL import Image
 
-import torchvision.transforms as transforms
 import torch
+import torchvision.transforms as transforms
+use_gpu = torch.cuda.is_available()
 
 #local imports
 from chexpert_data import CheXpertDataSet
@@ -17,19 +21,20 @@ from chexpert_data import CheXpertDataSet
 IMAGENET_MEAN = [0.485, 0.456, 0.406]  # mean of ImageNet dataset(for normalization)
 IMAGENET_STD = [0.229, 0.224, 0.225]   # std of ImageNet dataset(for normalization)
 
-#TODO configure resource usage
-use_gpu = torch.cuda.is_available()
 
 def main():
 
-    #parse config file
     parser = argparse.ArgumentParser(formatter_class = argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('cfg_path', metavar='CFG_PATH', type = str, help = 'Path to the config file in json format.')
+    #parse config file
+    parser.add_argument('cfg_path', type = str, help = 'Path to the config file in json format.')
+    #whether to assert GPU usage (disable for testing without GPU)
+    parser.add_argument('--no_gpu', dest='no_gpu', help='Don\'t verify GPU usage.', action='store_true')
     args = parser.parse_args()
     with open(args.cfg_path) as f:
         cfg = json.load(f)
 
-    check_gpu_usage(use_gpu)
+    if not args.no_gpu:
+        check_gpu_usage(use_gpu)
 
     #TODO configure randomness
     random_seed = cfg['random_seed']
