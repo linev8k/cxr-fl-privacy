@@ -34,7 +34,7 @@ ssh [firstname.lastname]@dgxa100-01.delab.i.hpi.de
 
 ## Storage
 
-You have a home directory available on all machines. However, it is **not shared** between machines. Ask where you can store large amounts of data. On DGX-A100 you also have access to ```/scratch```, where you can put temporary files (though keep in mind that no backups are kept for this.)
+You have a home directory available on all machines. However, it is **not shared** between machines. Ask where you can store large amounts of data. You also have access to ```/scratch```, where you can put temporary files (though keep in mind that no backups are kept for this.)
 
 ## Anaconda - DGX-A100
 
@@ -42,7 +42,7 @@ Anaconda is a convenient package manager for Python.
 
 ### Set Up Anaconda
 
-Install Anaconda in your home directory. To do this, follow [these steps](https://docs.anaconda.com/anaconda/install/linux/). Omit the GUI packages. For the first step, instead of downloading Anaconda from a browser, you can use ```wget``` with the respective link, as in   ```wget https://www.anaconda.com/download/#linux```.  
+Install Anaconda in your home directory. To do this, follow [these steps](https://docs.anaconda.com/anaconda/install/linux/). Omit the GUI packages. For the first step, instead of downloading the Anaconda installer from a browser, you can use ```wget``` with the respective link, as in   ```wget https://repo.anaconda.com/archive/Anaconda3-2021.05-Linux-x86_64.sh```.  
 You can also consider to install [miniconda](https://docs.conda.io/en/latest/miniconda.html) for a more light-weight installation. 
 
 A guide on how to manage environments with conda is available [here](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html). Keep an eye on memory space taken up by Anaconda packages, it can pile up when working with lots of environments.
