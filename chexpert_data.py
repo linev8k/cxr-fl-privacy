@@ -10,9 +10,10 @@ from torch.utils.data import Dataset
 
 
 class CheXpertDataSet(Dataset):
-    def __init__(self, data_PATH, nnClassCount, policy, transform = None):
+    def __init__(self, data_path, data_file, nnClassCount, policy, transform = None):
         """
-        data_PATH: path to the file containing images with corresponding labels.
+        data_path: path to where the data lives. This directory should contain CheXpert-v1.0-small/.
+        data_file: path to the file containing images with corresponding labels.
         nnClassCount: number of all possible labels.
         policy: name the policy with regard to the uncertainty labels.
         transform: optional transform to be applied on a sample.
@@ -20,7 +21,7 @@ class CheXpertDataSet(Dataset):
         image_names = []
         labels = []
 
-        with open(data_PATH, 'r') as f:
+        with open(data_file, 'r') as f:
             csvReader = csv.reader(f)
             next(csvReader, None) # skip the header
 
@@ -45,7 +46,7 @@ class CheXpertDataSet(Dataset):
                     else:
                         label[i] = 0
 
-                image_names.append('./' + image_name)
+                image_names.append(data_path + image_name)
                 labels.append(label)
 
         self.image_names = image_names

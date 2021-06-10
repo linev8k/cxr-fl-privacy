@@ -18,8 +18,8 @@ use_gpu = torch.cuda.is_available()
 
 #local imports
 from chexpert_data import CheXpertDataSet
-from trainer import Trainer
-from trainer import DenseNet121
+from trainer import Trainer, DenseNet121
+from utils import check_path
 
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]  # mean of ImageNet dataset(for normalization)
@@ -35,6 +35,8 @@ def main():
     parser.add_argument('--output_path', '-o', help = 'Path to save results.', default = 'results/')
     #whether to assert GPU usage (disable for testing without GPU)
     parser.add_argument('--no_gpu', dest='no_gpu', help='Don\'t verify GPU usage.', action='store_true')
+    #set path to chexpert data
+    parser.add_argument('--chexpert', '-d', dest='chexpert_path', help='Path to CheXpert data.', default='./')
     args = parser.parse_args()
     with open(args.cfg_path) as f:
         cfg = json.load(f)
@@ -62,9 +64,10 @@ def main():
                'Pleural Effusion', 'Pleural Other', 'Fracture', 'Support Devices']
 
     #run preprocessing to obtain these files
-    pathFileTrain = './CheXpert-v1.0-small/train_mod.csv'
-    pathFileValid = './CheXpert-v1.0-small/valid_mod.csv'
-    pathFileTest = './CheXpert-v1.0-small/test_mod.csv'
+    data_path = check_path(args.chexpert_path, warn_exists=False, require_exists=True)
+    pathFileTrain = data_path + 'CheXpert-v1.0-small/train_mod.csv'
+    pathFileValid =  data_path + 'CheXpert-v1.0-small/valid_mod.csv'
+    pathFileTest = data_path + 'CheXpert-v1.0-small/test_mod.csv'
 
     # define transforms
     # if using augmentation, use different transforms for training, test & val data
@@ -76,14 +79,14 @@ def main():
                                             ])
 
     # Load dataset
-    datasetTrain = CheXpertDataSet(pathFileTrain, nnClassCount, policy, transform = transformSequence)
+    datasetTrain = CheXpertDataSet(data_path, pathFileTrain, nnClassCount, policy, transform = transformSequence)
     print("Train data length:", len(datasetTrain))
 
     #remove transformations here?
-    datasetValid = CheXpertDataSet(pathFileValid, nnClassCount, policy, transform = transformSequence)
+    datasetValid = CheXpertDataSet(data_path, pathFileValid, nnClassCount, policy, transform = transformSequence)
     print("Valid data length:", len(datasetValid))
 
-    datasetTest = CheXpertDataSet(pathFileTest, nnClassCount, policy, transform = transformSequence)
+    datasetTest = CheXpertDataSet(data_path, pathFileTest, nnClassCount, policy, transform = transformSequence)
     print("Test data length:", len(datasetTest))
 
     assert datasetTrain[0][0].shape == torch.Size([3,imgtransResize,imgtransResize])
@@ -98,15 +101,7 @@ def main():
 
     model = DenseNet121(nnClassCount, cfg['pre_trained'])
 
-    #train the model
-    output_path = args.output_path
-    if args.output_path[-1] != '/':
-        output_path = args.output_path + '/'
-    else:
-        output_path= args.output_path
-
-    if not os.path.exists(output_path):
-        os.makedirs(output_path)
+    output_path = check_path(args.output_path, warn_exists=True)
 
 
     # start = time.time()
@@ -119,13 +114,14 @@ def main():
 
 
 
-
 def check_gpu_usage(use_gpu):
     assert use_gpu is True, "GPU not used"
     assert torch.cuda.device_count() == len(os.environ["CUDA_VISIBLE_DEVICES"]), "Wrong number of GPUs available to Pytorch"
     print(f"{torch.cuda.device_count} GPUs available")
 
     return True
+
+
 
 
 if __name__ == "__main__":
