@@ -118,7 +118,7 @@ def main():
 def check_gpu_usage(use_gpu):
     assert use_gpu is True, "GPU not used"
     assert torch.cuda.device_count() == len(selected_gpus), "Wrong number of GPUs available to Pytorch"
-    print(f"{torch.cuda.device_count} GPUs available")
+    print(f"{torch.cuda.device_count()} GPUs available")
 
     return True
 
