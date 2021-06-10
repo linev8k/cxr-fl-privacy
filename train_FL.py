@@ -3,7 +3,8 @@
 
 #set which GPUs to use
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = '1, 2, 3' #configure this
+selected_gpus = [1,2,3] #configure this
+os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(gpu) for gpu in selected_gpus])
 
 import pandas as pd
 import argparse
@@ -116,7 +117,7 @@ def main():
 
 def check_gpu_usage(use_gpu):
     assert use_gpu is True, "GPU not used"
-    assert torch.cuda.device_count() == len(os.environ["CUDA_VISIBLE_DEVICES"]), "Wrong number of GPUs available to Pytorch"
+    assert torch.cuda.device_count() == len(selected_gpus), "Wrong number of GPUs available to Pytorch"
     print(f"{torch.cuda.device_count} GPUs available")
 
     return True
