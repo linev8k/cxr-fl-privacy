@@ -100,7 +100,10 @@ def main():
 
     print('Length train dataloader (n batches): ', len(dataLoaderTrain))
 
-    model = DenseNet121(nnClassCount, cfg['pre_trained'])
+    if use_gpu:
+        model = DenseNet121(nnClassCount, cfg['pre_trained']).cuda()
+    else:
+        model = DenseNet121(nnClassCount, cfg['pre_trained'])
 
     output_path = check_path(args.output_path, warn_exists=True)
 
