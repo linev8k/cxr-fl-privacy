@@ -3,6 +3,7 @@
 import time
 import numpy as np
 from sklearn.metrics import roc_auc_score
+from tqdm import tqdm
 
 
 import torch
@@ -83,23 +84,24 @@ class Trainer():
         losstrain = 0
         model.train()
 
-        for batchID, (varInput, target) in enumerate(dataLoaderTrain):
+        with tqdm(dataLoaderTrain, unit='batch') as tqdm_loader:
 
-            if use_gpu:
-                target = target.cuda(non_blocking = True)
-                varInput = varInput.cuda(non_blocking=True)
+            for varInput, target in tqdm_loader:
 
-            varOutput = model(varInput) #forward pass
-            lossvalue = loss(varOutput, target)
+                if use_gpu:
+                    target = target.cuda(non_blocking = True)
+                    varInput = varInput.cuda(non_blocking=True)
 
-            optimizer.zero_grad() #reset gradient
-            lossvalue.backward()
-            optimizer.step()
+                varOutput = model(varInput) #forward pass
+                lossvalue = loss(varOutput, target)
 
-            losstrain += lossvalue.item()
+                optimizer.zero_grad() #reset gradient
+                lossvalue.backward()
+                optimizer.step()
 
-            if batchID % 1000 == 999:
-                print('[Batch: %5d] loss: %.3f'%(batchID + 1, losstrain / 1000))
+                losstrain += lossvalue.item()
+
+                tqdm_loader.set_postfix(loss=lossvalue.item())
 
         return losstrain / len(dataLoaderTrain)
 
@@ -109,7 +111,7 @@ class Trainer():
         lossVal = 0
 
         with torch.no_grad():
-            for i, (varInput, target) in enumerate(dataLoaderVal):
+            for varInput, target in dataLoaderVal:
 
                 if use_gpu:
                     target = target.cuda(non_blocking = True)
@@ -166,7 +168,7 @@ class Trainer():
                 outGT = torch.cat((outGT, target), 0)
 
                 bs, c, h, w = varInput.size() #batchsize, channel, height, width
-                varInput = varInput.view(-1, c, h, w) #resize
+                varInput = varInput.view(-1, c, h, w) #resize; why?
 
                 out = model(varInput)
                 outPRED = torch.cat((outPRED, out), 0)
