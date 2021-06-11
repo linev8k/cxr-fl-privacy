@@ -3,7 +3,7 @@
 
 #set which GPUs to use
 import os
-selected_gpus = [1,2,3] #configure this
+selected_gpus = [0,1] #configure this
 os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(gpu) for gpu in selected_gpus])
 
 import pandas as pd
@@ -111,10 +111,10 @@ def main():
     # start = time.time()
     # model_num, params = Trainer.train(model, dataLoaderTrain, dataLoaderVal, nnClassCount, cfg, output_path, use_gpu)
     # end = time.time()
-    # print(end-start)
+    # print(f"Total time: {end-start}")
 
     # outGT, outPRED = Trainer.test(model, dataLoaderTest, nnClassCount, class_names, use_gpu,
-    #                                     checkpoint='results/1-epoch_FL.pth.tar')
+    #                                     checkpoint= output_path+'1-epoch_FL.pth.tar')
 
 
 

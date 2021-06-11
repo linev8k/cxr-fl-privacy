@@ -38,7 +38,7 @@ class Trainer():
                                betas = tuple(cfg['betas']), eps = cfg['eps'], weight_decay = cfg['weight_decay'])
         loss = torch.nn.BCELoss() # setting binary cross entropy as loss function
 
-        if checkpoint != None and use_gpu: # loading checkpoint
+        if checkpoint != None: # loading checkpoint
             modelCheckpoint = torch.load(checkpoint)
             model.load_state_dict(modelCheckpoint['state_dict'])
             optimizer.load_state_dict(modelCheckpoint['optimizer'])
@@ -53,6 +53,7 @@ class Trainer():
             losst = Trainer.epochTrain(model, dataLoaderTrain, optimizer, loss, use_gpu)
             train_end.append(time.time()) # training ends
 
+            #validation
             lossv = Trainer.epochVal(model, dataLoaderVal, optimizer, loss, use_gpu)
             print("Training loss: {:.3f},".format(losst), "Valid loss: {:.3f}".format(lossv))
 
@@ -63,20 +64,20 @@ class Trainer():
                 torch.save({'epoch': epochID + 1, 'state_dict': model.state_dict(),
                             'best_loss': lossMIN, 'optimizer' : optimizer.state_dict()},
                            f"{output_path}{epochID + 1}-epoch_FL.pth.tar")
-                print('Epoch ' + str(epochID + 1) + ' [save] loss = ' + str(lossv))
+                print('Epoch ' + str(epochID + 1) + ' [save] val loss increased')
             else:
-                print('Epoch ' + str(epochID + 1) + ' [----] loss = ' + str(lossv))
+                print('Epoch ' + str(epochID + 1) + ' [----] val loss did not increase')
 
             print('\n')
             params = model.state_dict()
 
-        train_time = np.array(train_end) - np.array(train_start) #list of training times
+        #list of training times
+        train_time = np.array(train_end) - np.array(train_start)
         print("Training time for each epoch: {} seconds".format(train_time.round(0)))
         print('\n')
 
         #epoch with lowest validation loss, state dict of best model
         return model_num, params
-
 
     def epochTrain(model, dataLoaderTrain, optimizer, loss, use_gpu):
         losstrain = 0
@@ -85,12 +86,11 @@ class Trainer():
         for batchID, (varInput, target) in enumerate(dataLoaderTrain):
 
             if use_gpu:
-                varTarget = target.cuda(non_blocking = True)
-            else:
-                varTarget = target
+                target = target.cuda(non_blocking = True)
+                varInput = varInput.cuda(non_blocking=True)
 
             varOutput = model(varInput) #forward pass
-            lossvalue = loss(varOutput, varTarget)
+            lossvalue = loss(varOutput, target)
 
             optimizer.zero_grad() #reset gradient
             lossvalue.backward()
@@ -113,6 +113,7 @@ class Trainer():
 
                 if use_gpu:
                     target = target.cuda(non_blocking = True)
+                    varInput = varInput.cuda(non_blocking=True)
 
                 varOutput = model(varInput)
 
@@ -143,29 +144,29 @@ class Trainer():
 
         if use_gpu:
             cudnn.benchmark = True #select fastest conv. algorithm
-
-        if checkpoint != None and use_gpu:
-            modelCheckpoint = torch.load(checkpoint)
-            model.load_state_dict(modelCheckpoint['state_dict'])
-
-        if use_gpu:
             outGT = torch.FloatTensor().cuda()
             outPRED = torch.FloatTensor().cuda()
         else:
             outGT = torch.FloatTensor()
             outPRED = torch.FloatTensor()
 
+        if checkpoint != None:
+            modelCheckpoint = torch.load(checkpoint)
+            model.load_state_dict(modelCheckpoint['state_dict'])
+
+
         model.eval()
         outPROB = []
         with torch.no_grad():
-            for i, (input, target) in enumerate(dataLoaderTest):
+            for i, (varInput, target) in enumerate(dataLoaderTest):
 
                 if use_gpu:
                     target = target.cuda()
+                    varInput = varInput.cuda()
                 outGT = torch.cat((outGT, target), 0)
 
-                bs, c, h, w = input.size() #batchsize, channel, height, width
-                varInput = input.view(-1, c, h, w) #resize
+                bs, c, h, w = varInput.size() #batchsize, channel, height, width
+                varInput = varInput.view(-1, c, h, w) #resize
 
                 out = model(varInput)
                 outPRED = torch.cat((outPRED, out), 0)
