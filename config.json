@@ -7,8 +7,8 @@
   "random_seed": 206,
 
   "pre_trained": false,
-  "batch_size": 1,
-  "max_epochs": 3,
+  "batch_size": 16,
+  "max_epochs": 10,
   "lr": 0.001,
   "betas": [0.9, 0.999],
   "eps": 1e-08,

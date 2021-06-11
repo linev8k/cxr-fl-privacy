@@ -26,13 +26,13 @@ def main():
 
     # Read from CSV files
     Traindata = pd.read_csv(data_path+'CheXpert-v1.0-small/train.csv')
-    # Traindata = Traindata[500:]
-    Traindata = Traindata[1:4] #toy example for testing
+    Testdata = Traindata.head(500) # use first 500 training data as test data (obs ratio is almost same!)
+    Traindata = Traindata[500:2000]
+    # Traindata = Traindata[1:4] #toy example for testing
 
     Validdata = pd.read_csv(data_path+'CheXpert-v1.0-small/valid.csv')
-    Validdata = Validdata[1:3] #toy example for testing
+    # Validdata = Validdata[1:3] #toy example for testing
 
-    # Testdata = Traindata.head(500) # use first 500 training data as test data (obs ratio is almost same!)
     # Testdata = Validdata #use validation data for testing in this toy example, just to check the processing
 
     if cfg['front_lat'] != 'both':
