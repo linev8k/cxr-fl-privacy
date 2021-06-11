@@ -41,6 +41,7 @@ def main():
 
         Traindata = Traindata[Traindata['Path'].str.contains(cfg['front_lat'])] # use only frontal or lateral images
         Validdata = Validdata[Validdata['Path'].str.contains(cfg['front_lat'])]
+        Testdata = Testdata[Testdata['Path'].str.contains(cfg['front_lat'])]
 
     else:
         print("Using both frontal and lateral images")
@@ -50,7 +51,7 @@ def main():
     print(f"Train data length:", len(Traindata))
     Validdata.to_csv(data_path+'CheXpert-v1.0-small/valid_mod.csv', index = False)
     print(f"Valid data length:", len(Validdata))
-    Testdata = Validdata #for testing
+    # Testdata = Validdata #for testing
     Testdata.to_csv(data_path+'CheXpert-v1.0-small/test_mod.csv', index = False)
     print("Test data length:", len(Testdata))
 
