@@ -111,7 +111,7 @@ def main():
     # start = time.time()
     # model_num, params = Trainer.train(model, dataLoaderTrain, dataLoaderVal, nnClassCount, cfg, output_path, use_gpu)
     # end = time.time()
-    # print(f"Total time: {end-start}")
+    # print(f"Total time: {end-start})
 
     # outGT, outPRED = Trainer.test(model, dataLoaderTest, nnClassCount, class_names, use_gpu,
     #                                     checkpoint= output_path+'1-epoch_FL.pth.tar')
