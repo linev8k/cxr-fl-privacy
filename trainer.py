@@ -65,9 +65,9 @@ class Trainer():
                 torch.save({'epoch': epochID + 1, 'state_dict': model.state_dict(),
                             'best_loss': lossMIN, 'optimizer' : optimizer.state_dict()},
                            f"{output_path}{epochID + 1}-epoch_FL.pth.tar")
-                print('Epoch ' + str(epochID + 1) + ' [save] val loss increased')
+                print('Epoch ' + str(epochID + 1) + ' [save] val loss decreased')
             else:
-                print('Epoch ' + str(epochID + 1) + ' [----] val loss did not increase')
+                print('Epoch ' + str(epochID + 1) + ' [----] val loss did not decrease')
 
             print('\n')
             params = model.state_dict()
