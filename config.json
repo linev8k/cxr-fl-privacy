@@ -15,6 +15,6 @@
   "weight_decay": 0,
 
   "num_clients": 5,
-  "com_round": 3,
+  "com_rounds": 3,
   "fraction": 1.0
 }

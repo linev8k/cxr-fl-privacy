@@ -15,6 +15,7 @@ import time
 import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
+from torch.utils.data.dataset import random_split
 use_gpu = torch.cuda.is_available()
 
 #local imports
@@ -55,7 +56,7 @@ def main():
         torch.backends.cudnn.benchmark = False
 
 
-    # Parameters from config file
+    # Parameters from config file, client training
     nnIsTrained = cfg['pre_trained']     # pre-trained using ImageNet
     trBatchSize = cfg['batch_size']
     trMaxEpoch = cfg['max_epochs']
@@ -69,6 +70,11 @@ def main():
     class_names = ['No Finding', 'Enlarged Cardiomediastinum', 'Cardiomegaly', 'Lung Opacity',
                'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis', 'Pneumothorax',
                'Pleural Effusion', 'Pleural Other', 'Fracture', 'Support Devices']
+
+    #federated learning parameters
+    num_clients = cfg['num_clients']
+    fraction = cfg['fraction']
+    com_rounds = cfg['com_rounds']
 
     #run preprocessing to obtain these files
     data_path = check_path(args.chexpert_path, warn_exists=False, require_exists=True)
@@ -98,15 +104,30 @@ def main():
     datasetTest = CheXpertDataSet(data_path, pathFileTest, nnClassCount, policy, transform = transformSequence)
     print("Test data length:", len(datasetTest))
 
-    # assert datasetTrain[0][0].shape == torch.Size([3,imgtransResize,imgtransResize])
-    # assert datasetTrain[0][1].shape == torch.Size([nnClassCount])
+    assert datasetTrain[0][0].shape == torch.Size([3,imgtransResize,imgtransResize])
+    assert datasetTrain[0][1].shape == torch.Size([nnClassCount])
 
+    #IID distributed data, mixing patients between sites
+    split_trainData = get_client_data_split(len_train, num_clients)
+
+    #datasets and dataloaders for training data
+    datasetsClients = random_split(datasetTrain, split_trainData)
+    dataloadersClients = []
+
+    for client_dataset in datasetsClients:
+        dataloadersClients.append(DataLoader(dataset=client_dataset, batch_size=trBatchSize, shuffle=True,
+                                            num_workers=2, pin_memory=True))
+    print(dataloadersClients)
 
     #Create dataLoaders, normal training
-    dataLoaderTrain = DataLoader(dataset=datasetTrain, batch_size=trBatchSize, shuffle=True, num_workers=2, pin_memory=True)
+    # dataLoaderTrain = DataLoader(dataset=datasetTrain, batch_size=trBatchSize, shuffle=True, num_workers=2, pin_memory=True)
+    # print('Length train dataloader (n batches): ', len(dataLoaderTrain))
+
+    #separate dataloaders for validation and testing
     dataLoaderVal = DataLoader(dataset = datasetValid, batch_size = trBatchSize, num_workers = 2, pin_memory = True)
     dataLoaderTest = DataLoader(dataset = datasetTest, num_workers = 2, pin_memory = True)
-    print('Length train dataloader (n batches): ', len(dataLoaderTrain))
+
+
 
     #show images for testing
     # for batch in dataLoaderTrain:
@@ -115,6 +136,7 @@ def main():
 
     if use_gpu:
         model = DenseNet121(nnClassCount, cfg['pre_trained']).cuda()
+        # model=torch.nn.DataParallel(model).cuda()
     else:
         model = DenseNet121(nnClassCount, cfg['pre_trained'])
 
@@ -138,6 +160,18 @@ def check_gpu_usage(use_gpu):
     print(f"{torch.cuda.device_count()} GPUs available")
 
     return True
+
+def get_client_data_split(len_data, num_clients):
+
+    data_per_client = len_data//num_clients
+    print(f"Data per client: ", data_per_client)
+    data_left = len_data - data_per_client*num_clients
+    print(f"Data left: ", data_left)
+    #last client gets the rest, will be at most num_clients different from others
+    data_split = [data_per_client for i in range(num_clients-1)] + [data_per_client + data_left]
+    print(f"Data-client split: ", data_split)
+
+    return data_split
 
 
 
