@@ -145,7 +145,6 @@ class Trainer():
     def test(model, dataLoaderTest, nnClassCount, class_names, use_gpu, checkpoint=None):
 
         if use_gpu:
-            cudnn.benchmark = True #select fastest conv. algorithm
             outGT = torch.FloatTensor().cuda()
             outPRED = torch.FloatTensor().cuda()
         else:

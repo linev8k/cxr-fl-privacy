@@ -45,9 +45,15 @@ def main():
     if not args.no_gpu:
         check_gpu_usage(use_gpu)
 
-    #TODO configure randomness
+    #only use pytorch randomness, check for pitfalls when using other modules
     random_seed = cfg['random_seed']
-    torch.manual_seed(random_seed)
+    if random_seed != None:
+        torch.manual_seed(random_seed)
+        torch.cuda.manual_seed(random_seed)
+        torch.cuda.manual_seed_all(random_seed) # if use multi-GPU
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+
 
     # Parameters from config file
     nnIsTrained = cfg['pre_trained']     # pre-trained using ImageNet
@@ -70,18 +76,20 @@ def main():
     pathFileValid =  data_path + 'CheXpert-v1.0-small/valid_mod.csv'
     pathFileTest = data_path + 'CheXpert-v1.0-small/test_mod.csv'
 
+
     # define transforms
     # if using augmentation, use different transforms for training, test & val data
     transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
-                                            # transforms.RandomResizedCrop(imgtransCrop),
+                                            # transforms.RandomResizedCrop(imgtransResize),
                                             # transforms.RandomHorizontalFlip(),
                                             transforms.ToTensor(),
-                                            transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD)
+                                            # transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD)
                                             ])
 
     # Load dataset
     datasetTrain = CheXpertDataSet(data_path, pathFileTrain, nnClassCount, policy, transform = transformSequence)
-    print("Train data length:", len(datasetTrain))
+    len_train = len(datasetTrain)
+    print("Train data length:", len_train)
 
     #remove transformations here?
     datasetValid = CheXpertDataSet(data_path, pathFileValid, nnClassCount, policy, transform = transformSequence)
@@ -90,15 +98,20 @@ def main():
     datasetTest = CheXpertDataSet(data_path, pathFileTest, nnClassCount, policy, transform = transformSequence)
     print("Test data length:", len(datasetTest))
 
-    assert datasetTrain[0][0].shape == torch.Size([3,imgtransResize,imgtransResize])
-    assert datasetTrain[0][1].shape == torch.Size([nnClassCount])
+    # assert datasetTrain[0][0].shape == torch.Size([3,imgtransResize,imgtransResize])
+    # assert datasetTrain[0][1].shape == torch.Size([nnClassCount])
 
-    #Create dataLoaders
+
+    #Create dataLoaders, normal training
     dataLoaderTrain = DataLoader(dataset=datasetTrain, batch_size=trBatchSize, shuffle=True, num_workers=2, pin_memory=True)
     dataLoaderVal = DataLoader(dataset = datasetValid, batch_size = trBatchSize, num_workers = 2, pin_memory = True)
     dataLoaderTest = DataLoader(dataset = datasetTest, num_workers = 2, pin_memory = True)
-
     print('Length train dataloader (n batches): ', len(dataLoaderTrain))
+
+    #show images for testing
+    # for batch in dataLoaderTrain:
+    #     transforms.ToPILImage()(batch[0][0]).show()
+
 
     if use_gpu:
         model = DenseNet121(nnClassCount, cfg['pre_trained']).cuda()
@@ -108,10 +121,11 @@ def main():
     output_path = check_path(args.output_path, warn_exists=True)
 
 
-    start = time.time()
-    model_num, params = Trainer.train(model, dataLoaderTrain, dataLoaderVal, nnClassCount, cfg, output_path, use_gpu)
-    end = time.time()
-    print(f"Total time: {end-start}")
+
+    # start = time.time()
+    # model_num, params = Trainer.train(model, dataLoaderTrain, dataLoaderVal, nnClassCount, cfg, output_path, use_gpu)
+    # end = time.time()
+    # print(f"Total time: {end-start}")
 
     # outGT, outPRED = Trainer.test(model, dataLoaderTest, nnClassCount, class_names, use_gpu,
     #                                     checkpoint= output_path+'1-epoch_FL.pth.tar')
