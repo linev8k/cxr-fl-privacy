@@ -34,7 +34,7 @@ ssh [firstname.lastname]@dgxa100-01.delab.i.hpi.de
 
 ## Storage
 
-You have a home directory available on all machines. However, it is **not shared** between machines. Ask where you can store large amounts of data. You also have access to ```/scratch```, where you can put temporary files (though keep in mind that no backups are kept for this.)
+You have a home directory available on all machines at ```/hpi/fs00/home/[firstname.lastname]``` (which is different from ```~```, which is individual for each machine). Ask where you can store large amounts of data. You also have access to ```/scratch```, where you can put temporary files (for this, no backups are created).
 
 ## Anaconda - DGX-A100
 
