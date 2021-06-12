@@ -138,13 +138,14 @@ def main():
     #create model
     if use_gpu:
         model = DenseNet121(nnClassCount, cfg['pre_trained']).cuda()
-        # model=torch.nn.DataParallel(model).cuda()
+        model=torch.nn.DataParallel(model).cuda()
     else:
         model = DenseNet121(nnClassCount, cfg['pre_trained'])
 
     #define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)
 
+    fed_start = time.time()
     #FEDERATED LEARNING
     for i in range(com_rounds):
 
@@ -198,6 +199,8 @@ def main():
         print(f"[[[ Round {i} End ]]]\n")
 
     print("Global model trained")
+    fed_end = time.time()
+    print(f"Total training time: {fed_end-fed_start}")
 
     #save for inference
     torch.save(model.state_dict(), output_path+f"global_{com_rounds}rounds.pth.tar")
