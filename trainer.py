@@ -62,23 +62,21 @@ class Trainer():
             if lossv < lossMIN:
                 lossMIN = lossv
                 model_num = epochID + 1
-                torch.save({'epoch': epochID + 1, 'state_dict': model.state_dict(),
+                torch.save({'epoch': model_num, 'state_dict': model.state_dict(),
                             'best_loss': lossMIN, 'optimizer' : optimizer.state_dict()},
-                           f"{output_path}{epochID + 1}-epoch_FL.pth.tar")
-                print('Epoch ' + str(epochID + 1) + ' [save] val loss decreased')
+                           f"{output_path}{model_num}-epoch_FL.pth.tar")
+                print('Epoch ' + str(model_num) + ' [save] val loss decreased')
             else:
-                print('Epoch ' + str(epochID + 1) + ' [----] val loss did not decrease')
+                print('Epoch ' + str(model_num) + ' [----] val loss did not decrease')
 
-            print('\n')
             params = model.state_dict()
 
         #list of training times
         train_time = np.array(train_end) - np.array(train_start)
         print("Training time for each epoch: {} seconds".format(train_time.round(0)))
-        print('\n')
 
         #epoch with lowest validation loss, state dict of best model
-        return model_num, params
+        return params
 
     def epochTrain(model, dataLoaderTrain, optimizer, loss, use_gpu):
         losstrain = 0
@@ -153,7 +151,10 @@ class Trainer():
 
         if checkpoint != None:
             modelCheckpoint = torch.load(checkpoint)
-            model.load_state_dict(modelCheckpoint['state_dict'])
+            if 'state_dict' in modelCheckpoint:
+                model.load_state_dict(modelCheckpoint['state_dict'])
+            else:
+                model.load_state_dict(modelCheckpoint)
 
 
         model.eval()

@@ -11,6 +11,7 @@ import argparse
 import json
 from PIL import Image
 import time
+import random
 
 import torch
 import torchvision.transforms as transforms
@@ -46,7 +47,8 @@ def main():
     if not args.no_gpu:
         check_gpu_usage(use_gpu)
 
-    #only use pytorch randomness, check for pitfalls when using other modules
+    #only use pytorch randomness for direct usage with pytorch
+    #check for pitfalls when using other modules
     random_seed = cfg['random_seed']
     if random_seed != None:
         torch.manual_seed(random_seed)
@@ -54,6 +56,7 @@ def main():
         torch.cuda.manual_seed_all(random_seed) # if use multi-GPU
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
+        random.seed(random_seed)
 
 
     # Parameters from config file, client training
@@ -107,7 +110,7 @@ def main():
     assert datasetTrain[0][0].shape == torch.Size([3,imgtransResize,imgtransResize])
     assert datasetTrain[0][1].shape == torch.Size([nnClassCount])
 
-    #IID distributed data, mixing patients between sites
+    #IID distributed data, balanced, mixing patients between sites
     split_trainData = get_client_data_split(len_train, num_clients)
 
     #datasets and dataloaders for training data
@@ -117,7 +120,6 @@ def main():
     for client_dataset in datasetsClients:
         dataloadersClients.append(DataLoader(dataset=client_dataset, batch_size=trBatchSize, shuffle=True,
                                             num_workers=2, pin_memory=True))
-    print(dataloadersClients)
 
     #Create dataLoaders, normal training
     # dataLoaderTrain = DataLoader(dataset=datasetTrain, batch_size=trBatchSize, shuffle=True, num_workers=2, pin_memory=True)
@@ -133,24 +135,81 @@ def main():
     # for batch in dataLoaderTrain:
     #     transforms.ToPILImage()(batch[0][0]).show()
 
-
+    #create model
     if use_gpu:
         model = DenseNet121(nnClassCount, cfg['pre_trained']).cuda()
         # model=torch.nn.DataParallel(model).cuda()
     else:
         model = DenseNet121(nnClassCount, cfg['pre_trained'])
 
+    #define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)
 
+    #FEDERATED LEARNING
+    for i in range(com_rounds):
 
+        print(f"[[[ Round {i} Start ]]]")
+        client_params = [None] * num_clients #store all client models
 
+        # Step 1: select random fraction of clients
+        if fraction < 1:
+            sel_clients = sorted(random.sample(range(num_clients),
+                                           round(num_clients*fraction)))
+        else:
+            sel_clients = list(range(num_clients))
+        print("Number of selected clients: ", len(sel_clients))
+        print("Clients selected: ", sel_clients)
+
+        # Step 2: send global model to clients and train locally
+        for client_k in sel_clients:
+
+            print(f"<< Client {client_k} Training Start >>")
+            client_output_path = output_path + f"round{i}_client{client_k}/"
+            client_output_path = check_path(client_output_path, warn_exists=False)
+            print(client_output_path)
+
+            train_valid_start = time.time()
+            client_params[client_k] = Trainer.train(model, dataloadersClients[client_k], dataLoaderVal, # Step 3: Perform local computations
+                                              nnClassCount, cfg, client_output_path, use_gpu)
+
+            train_valid_end = time.time()
+            client_time = round(train_valid_end - train_valid_start)
+            print(f"<< Client {client_k} Training Time: {client_time} seconds >>")
+
+        trained_clients = [idx for idx in range(num_clients) if client_params[idx] != None]
+        first_idx = trained_clients[0]
+        last_idx = trained_clients[-1]
+        print(trained_clients)
+        # Step 4: return updates to server
+        for key in client_params[first_idx]: #iterate through parameters layerwise
+            weights, weightn = [], []
+
+            for clie in sel_clients:
+                weights.append(client_params[clie][key]*split_trainData[clie])
+                weightn.append(split_trainData[clie])
+            #store in parameter list, last client
+            client_params[last_idx][key] = sum(weights) / sum(weightn) # weighted averaging model weights
+
+        if use_gpu:
+            model = DenseNet121(nnClassCount).cuda()
+            model = torch.nn.DataParallel(model).cuda()
+        # Step 5: server updates global state
+        model.load_state_dict(client_params[last_idx])
+        print(f"[[[ Round {i} End ]]]\n")
+
+    print("Global model trained")
+
+    #save for inference
+    torch.save(model.state_dict(), output_path+f"global_{com_rounds}rounds.pth.tar")
+
+    #normal training
     # start = time.time()
-    # model_num, params = Trainer.train(model, dataLoaderTrain, dataLoaderVal, nnClassCount, cfg, output_path, use_gpu)
+    # params = Trainer.train(model, dataLoaderTrain, dataLoaderVal, nnClassCount, cfg, output_path, use_gpu)
     # end = time.time()
     # print(f"Total time: {end-start}")
 
-    # outGT, outPRED = Trainer.test(model, dataLoaderTest, nnClassCount, class_names, use_gpu,
-    #                                     checkpoint= output_path+'1-epoch_FL.pth.tar')
+    outGT, outPRED = Trainer.test(model, dataLoaderTest, nnClassCount, class_names, use_gpu,
+                                        checkpoint= output_path+f"global_{com_rounds}rounds.pth.tar")
 
 
 
@@ -163,6 +222,7 @@ def check_gpu_usage(use_gpu):
 
 def get_client_data_split(len_data, num_clients):
 
+    print(f"{num_clients} clients")
     data_per_client = len_data//num_clients
     print(f"Data per client: ", data_per_client)
     data_left = len_data - data_per_client*num_clients
