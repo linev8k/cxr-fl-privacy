@@ -28,6 +28,9 @@ from utils import check_path
 IMAGENET_MEAN = [0.485, 0.456, 0.406]  # mean of ImageNet dataset(for normalization)
 IMAGENET_STD = [0.229, 0.224, 0.225]   # std of ImageNet dataset(for normalization)
 
+CHEXPERT_MEAN = [0,0,0]
+CHEXPERT_STD = [0,0,0] #TO DO compute
+
 
 def main():
 
@@ -88,6 +91,13 @@ def main():
     pathFileValid =  data_path + 'CheXpert-v1.0-small/valid_mod.csv'
     pathFileTest = data_path + 'CheXpert-v1.0-small/test_mod.csv'
 
+    #define mean and std dependent on whether using a pretrained model
+    if nnIsTrained:
+        data_mean = IMAGENET_MEAN
+        data_std = IMAGENET_STD
+    else:
+        data_mean = CHEXPERT_MEAN
+        data_std = CHEXPERT_STD
 
     # define transforms
     # if using augmentation, use different transforms for training, test & val data
@@ -95,7 +105,7 @@ def main():
                                             # transforms.RandomResizedCrop(imgtransResize),
                                             # transforms.RandomHorizontalFlip(),
                                             transforms.ToTensor(),
-                                            # transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD)
+                                            # transforms.Normalize(data_mean, data_std)
                                             ])
 
     # Load dataset
@@ -142,10 +152,10 @@ def main():
 
     #create model
     if use_gpu:
-        model = DenseNet121(nnClassCount, cfg['pre_trained']).cuda()
+        model = DenseNet121(nnClassCount, nnIsTrained).cuda()
         model=torch.nn.DataParallel(model).cuda()
     else:
-        model = DenseNet121(nnClassCount, cfg['pre_trained'])
+        model = DenseNet121(nnClassCount, nnIsTrained)
 
     #define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)
@@ -222,6 +232,9 @@ def main():
 
 
 def check_gpu_usage(use_gpu):
+
+    """Gives feedback to whether GPU is available and if the expected number of GPUs are visible to PyTorch.
+    """
     assert use_gpu is True, "GPU not used"
     assert torch.cuda.device_count() == len(selected_gpus), "Wrong number of GPUs available to Pytorch"
     print(f"{torch.cuda.device_count()} GPUs available")
@@ -229,6 +242,11 @@ def check_gpu_usage(use_gpu):
     return True
 
 def get_client_data_split(len_data, num_clients):
+
+    """Returns a list with amount of data that should be provided to clients.
+    One list element represents one client.
+    For now assumes that data should be balanced between clients.
+    """
 
     print(f"{num_clients} clients")
     data_per_client = len_data//num_clients
