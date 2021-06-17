@@ -46,6 +46,8 @@ def main():
 
     if not args.no_gpu:
         check_gpu_usage(use_gpu)
+    else:
+        use_gpu=False
 
     #only use pytorch randomness for direct usage with pytorch
     #check for pitfalls when using other modules
@@ -133,9 +135,9 @@ def main():
 
 
     #show images for testing
-    for batch in dataloadersClients[0]:
-        # transforms.ToPILImage()(batch[0][0]).show()
-        print(batch[1][0])
+    # for batch in dataloadersClients[0]:
+    #     # transforms.ToPILImage()(batch[0][0]).show()
+    #     print(batch[1][0])
 
 
     #create model
@@ -215,7 +217,7 @@ def main():
     # print(f"Total time: {end-start}")
 
     outGT, outPRED = Trainer.test(model, dataLoaderTest, class_idx, class_names, use_gpu,
-                                        checkpoint= output_path+f"global_1rounds.pth.tar")
+                                        checkpoint= output_path+f"global_{com_rounds}rounds.pth.tar")
 
 
 
