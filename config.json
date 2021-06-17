@@ -16,5 +16,5 @@
   "max_epochs": 1,
   "num_clients": 2,
   "com_rounds": 1,
-  "fraction": 0.5
+  "fraction": 1
 }

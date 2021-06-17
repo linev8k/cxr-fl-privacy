@@ -53,6 +53,9 @@ class CheXpertDataSet(Dataset):
 
         self.image_names = image_names
         self.labels = labels
+        self.class_names = ['No Finding', 'Enlarged Cardiomediastinum', 'Cardiomegaly', 'Lung Opacity',
+                   'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis', 'Pneumothorax',
+                   'Pleural Effusion', 'Pleural Other', 'Fracture', 'Support Devices']
         self.transform = transform
 
     def __getitem__(self, index):

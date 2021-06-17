@@ -76,9 +76,7 @@ def main():
 
     class_idx = cfg['class_idx'] #indices of classes used for classification
     nnClassCount = len(class_idx)       # dimension of the output
-    class_names = ['No Finding', 'Enlarged Cardiomediastinum', 'Cardiomegaly', 'Lung Opacity',
-               'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis', 'Pneumothorax',
-               'Pleural Effusion', 'Pleural Other', 'Fracture', 'Support Devices']
+
 
     #federated learning parameters
     num_clients = cfg['num_clients']
@@ -122,6 +120,7 @@ def main():
 
     assert datasetTrain[0][0].shape == torch.Size([3,imgtransResize,imgtransResize])
     assert datasetTrain[0][1].shape == torch.Size([nnClassCount])
+
 
     #IID distributed data, balanced, mixing patients between sites
     split_trainData = get_client_data_split(len_train, num_clients)
@@ -186,7 +185,7 @@ def main():
 
             train_valid_start = time.time()
             client_params[client_k] = Trainer.train(model, dataloadersClients[client_k], dataLoaderVal, # Step 3: Perform local computations
-                                              nnClassCount, cfg, client_output_path, use_gpu)
+                                              class_idx, cfg, client_output_path, use_gpu, out_csv=f"round{i}_client{client_k}.csv")
 
             train_valid_end = time.time()
             client_time = round(train_valid_end - train_valid_start)
@@ -215,19 +214,19 @@ def main():
 
     print("Global model trained")
     fed_end = time.time()
-    print(f"Total training time: {fed_end-fed_start}")
+    print(f"Total training time: {round(fed_end-fed_start,0)}")
 
     #save for inference
     torch.save(model.state_dict(), output_path+f"global_{com_rounds}rounds.pth.tar")
 
     #normal training
     # start = time.time()
-    # params = Trainer.train(model, dataLoaderTrain, dataLoaderVal, nnClassCount, cfg, output_path, use_gpu)
+    # params = Trainer.train(model, dataLoaderTrain, dataLoaderVal, class_idx, cfg, output_path, use_gpu)
     # end = time.time()
     # print(f"Total time: {end-start}")
 
-    outGT, outPRED = Trainer.test(model, dataLoaderTest, class_idx, class_names, use_gpu,
-                                        checkpoint= output_path+f"global_{com_rounds}rounds.pth.tar")
+    # outGT, outPRED, auroc_mean = Trainer.test(model, dataLoaderTest, class_idx, use_gpu,
+    #                                     checkpoint= output_path+f"global_{com_rounds}rounds.pth.tar")
 
 
 
