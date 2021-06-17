@@ -140,7 +140,9 @@ class Trainer():
         return outAUROC
 
 
-    def test(model, dataLoaderTest, nnClassCount, class_names, use_gpu, checkpoint=None):
+    def test(model, dataLoaderTest, class_idx, class_names, use_gpu, checkpoint=None):
+
+        nnClassCount = len(class_idx)
 
         if use_gpu:
             outGT = torch.FloatTensor().cuda()
@@ -177,8 +179,8 @@ class Trainer():
         aurocMean = np.array(aurocIndividual).mean()
         print('AUROC mean: {:.4f}'.format(aurocMean))
 
-        for i in range (0, len(aurocIndividual)):
-            print(class_names[i], ': {:.4f}'.format(aurocIndividual[i]))
+        for i in range(0, len(aurocIndividual)):
+            print(class_names[class_idx[i]], ': {:.4f}'.format(aurocIndividual[i]))
 
         return outGT, outPRED
 

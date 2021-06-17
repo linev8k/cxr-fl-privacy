@@ -69,7 +69,8 @@ def main():
     # imgtransCrop = cfg['imgtransCrop']
     policy = cfg['policy']
 
-    nnClassCount = cfg['nnClassCount']       # dimension of the output
+    class_idx = cfg['class_idx'] #indices of classes used for classification
+    nnClassCount = len(class_idx)       # dimension of the output
     class_names = ['No Finding', 'Enlarged Cardiomediastinum', 'Cardiomegaly', 'Lung Opacity',
                'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis', 'Pneumothorax',
                'Pleural Effusion', 'Pleural Other', 'Fracture', 'Support Devices']
@@ -96,15 +97,15 @@ def main():
                                             ])
 
     # Load dataset
-    datasetTrain = CheXpertDataSet(data_path, pathFileTrain, nnClassCount, policy, transform = transformSequence)
+    datasetTrain = CheXpertDataSet(data_path, pathFileTrain, class_idx, policy, transform = transformSequence)
     len_train = len(datasetTrain)
     print("Train data length:", len_train)
 
     #remove transformations here?
-    datasetValid = CheXpertDataSet(data_path, pathFileValid, nnClassCount, policy, transform = transformSequence)
+    datasetValid = CheXpertDataSet(data_path, pathFileValid, class_idx, policy, transform = transformSequence)
     print("Valid data length:", len(datasetValid))
 
-    datasetTest = CheXpertDataSet(data_path, pathFileTest, nnClassCount, policy, transform = transformSequence)
+    datasetTest = CheXpertDataSet(data_path, pathFileTest, class_idx, policy, transform = transformSequence)
     print("Test data length:", len(datasetTest))
 
     assert datasetTrain[0][0].shape == torch.Size([3,imgtransResize,imgtransResize])
@@ -132,8 +133,10 @@ def main():
 
 
     #show images for testing
-    # for batch in dataLoaderTrain:
-    #     transforms.ToPILImage()(batch[0][0]).show()
+    for batch in dataloadersClients[0]:
+        # transforms.ToPILImage()(batch[0][0]).show()
+        print(batch[1][0])
+
 
     #create model
     if use_gpu:
@@ -211,8 +214,8 @@ def main():
     # end = time.time()
     # print(f"Total time: {end-start}")
 
-    outGT, outPRED = Trainer.test(model, dataLoaderTest, nnClassCount, class_names, use_gpu,
-                                        checkpoint= output_path+f"global_{com_rounds}rounds.pth.tar")
+    outGT, outPRED = Trainer.test(model, dataLoaderTest, class_idx, class_names, use_gpu,
+                                        checkpoint= output_path+f"global_1rounds.pth.tar")
 
 
 

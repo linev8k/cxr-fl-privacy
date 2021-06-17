@@ -1,7 +1,7 @@
 {
   "front_lat": "frontal",
-  "nnClassCount": 14,
-  "policy": "ones",
+  "class_idx": [0,1,2,3,4,5,6,7,8,9,10,11,12,13],
+  "policy": "zeros",
 
   "imgtransResize": 224,
   "random_seed": 206,
@@ -12,9 +12,9 @@
   "eps": 1e-08,
   "weight_decay": 0,
 
-  "batch_size": 8,
-  "max_epochs": 10,
-  "num_clients": 5,
-  "com_rounds": 3,
-  "fraction": 1.0
+  "batch_size": 1,
+  "max_epochs": 1,
+  "num_clients": 2,
+  "com_rounds": 1,
+  "fraction": 0.5
 }
