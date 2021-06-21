@@ -57,8 +57,11 @@ def get_mean_std(data_path='./', csv_file='train.csv'):
     class_idx=[0]
     policy='zeros'
 
+    transform_sequence = transforms.Compose([transforms.Resize((320,390)), #because one image has 389 pixels, not 390
+                                            transforms.ToTensor()])
+
     pathFileTrain = data_path + 'CheXpert-v1.0-small/' + csv_file
-    dataset = CheXpertDataSet(data_path, pathFileTrain, class_idx, policy, transform = transforms.ToTensor())
+    dataset = CheXpertDataSet(data_path, pathFileTrain, class_idx, policy, transform = transform_sequence)
 
     dataloader = DataLoader(dataset=dataset, batch_size=50, shuffle=False)
 

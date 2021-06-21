@@ -14,7 +14,7 @@
 
   "batch_size": 8,
   "max_epochs": 1,
-  "num_clients": 1,
+  "num_clients": 5,
   "com_rounds": 1,
   "fraction": 1
 }
