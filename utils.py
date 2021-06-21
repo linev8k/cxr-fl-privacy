@@ -70,7 +70,6 @@ def get_mean_std(data_path='./', csv_file='train.csv'):
         batch_samples = images.size(0)
         images = images.view(batch_samples, images.size(1), -1)
         mean += images.mean(2).sum(0)
-        print(images)
     mean = mean / len(dataset)
 
     var = 0.0
