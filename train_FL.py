@@ -3,7 +3,7 @@
 
 #set which GPUs to use
 import os
-selected_gpus = [0,1] #configure this
+selected_gpus = [6,7] #configure this
 os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(gpu) for gpu in selected_gpus])
 
 import pandas as pd
