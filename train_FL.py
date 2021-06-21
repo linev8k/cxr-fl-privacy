@@ -17,7 +17,6 @@ import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import random_split
-use_gpu = torch.cuda.is_available()
 
 #local imports
 from chexpert_data import CheXpertDataSet
@@ -33,6 +32,7 @@ CHEXPERT_STD = [0,0,0] #TO DO compute
 
 
 def main():
+    use_gpu = torch.cuda.is_available()
 
     parser = argparse.ArgumentParser(formatter_class = argparse.ArgumentDefaultsHelpFormatter)
     #parse config file
@@ -131,15 +131,15 @@ def main():
 
     for client_dataset in datasetsClients:
         dataloadersClients.append(DataLoader(dataset=client_dataset, batch_size=trBatchSize, shuffle=True,
-                                            num_workers=2, pin_memory=True))
+                                            num_workers=4, pin_memory=True))
 
     #Create dataLoaders, normal training
     # dataLoaderTrain = DataLoader(dataset=datasetTrain, batch_size=trBatchSize, shuffle=True, num_workers=2, pin_memory=True)
     # print('Length train dataloader (n batches): ', len(dataLoaderTrain))
 
     #separate dataloaders for validation and testing
-    dataLoaderVal = DataLoader(dataset = datasetValid, batch_size = trBatchSize, num_workers = 2, pin_memory = True)
-    dataLoaderTest = DataLoader(dataset = datasetTest, num_workers = 2, pin_memory = True)
+    dataLoaderVal = DataLoader(dataset = datasetValid, batch_size = trBatchSize, num_workers = 4, pin_memory = True)
+    dataLoaderTest = DataLoader(dataset = datasetTest, num_workers = 4, pin_memory = True)
 
 
 

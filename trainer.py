@@ -129,17 +129,19 @@ class Trainer():
         model.eval()
         lossVal = 0
 
+        if use_gpu:
+            outGT = torch.FloatTensor().cuda()
+            outPRED = torch.FloatTensor().cuda()
+        else:
+            outGT = torch.FloatTensor()
+            outPRED = torch.FloatTensor()
+
         with torch.no_grad():
             for varInput, target in dataLoaderVal:
 
                 if use_gpu:
                     target = target.cuda(non_blocking = True)
                     varInput = varInput.cuda(non_blocking=True)
-                    outGT = torch.FloatTensor().cuda()
-                    outPRED = torch.FloatTensor().cuda()
-                else:
-                    outGT = torch.FloatTensor()
-                    outPRED = torch.FloatTensor()
 
                 varOutput = model(varInput)
 
@@ -148,8 +150,10 @@ class Trainer():
                 #compute AUC mean for validation
                 outGT = torch.cat((outGT, target), 0)
                 outPRED = torch.cat((outPRED, varOutput), 0)
-                aurocIndividual = Trainer.computeAUROC(outGT, outPRED)
-                aurocMean = np.array(aurocIndividual).mean()
+
+        aurocIndividual = Trainer.computeAUROC(outGT, outPRED)
+        aurocMean = np.nanmean(np.array(aurocIndividual))
+        print('AUROC mean: {:.4f}'.format(aurocMean))
 
         return lossVal / len(dataLoaderVal), aurocMean
 
@@ -162,14 +166,15 @@ class Trainer():
         outAUROC = []
         datanpGT = dataGT.cpu().numpy()
         datanpPRED = dataPRED.cpu().numpy()
-        nnClassCount = len(dataGT)
+        nnClassCount = dataGT.shape[1] #0 is the batch size
 
         for i in range(nnClassCount):
             try:
                 outAUROC.append(roc_auc_score(datanpGT[:, i], datanpPRED[:, i]))
             except ValueError:
-                print("AUROC not defined")
-                pass
+                print(f"AUROC not defined for label {i}")
+                outAUROC.append(np.nan)
+
         return outAUROC
 
 
@@ -202,14 +207,11 @@ class Trainer():
                     varInput = varInput.cuda()
                 outGT = torch.cat((outGT, target), 0)
 
-                bs, c, h, w = varInput.size() #batchsize, channel, height, width
-                varInput = varInput.view(-1, c, h, w) #resize; why?
-
                 out = model(varInput)
                 outPRED = torch.cat((outPRED, out), 0)
 
         aurocIndividual = Trainer.computeAUROC(outGT, outPRED)
-        aurocMean = np.array(aurocIndividual).mean()
+        aurocMean = np.nanmean(np.array(aurocIndividual))
         print('AUROC mean: {:.4f}'.format(aurocMean))
 
         for i in range(0, len(aurocIndividual)):
