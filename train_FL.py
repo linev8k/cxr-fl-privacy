@@ -27,8 +27,8 @@ from utils import check_path
 IMAGENET_MEAN = [0.485, 0.456, 0.406]  # mean of ImageNet dataset(for normalization)
 IMAGENET_STD = [0.229, 0.224, 0.225]   # std of ImageNet dataset(for normalization)
 
-CHEXPERT_MEAN = [0,0,0]
-CHEXPERT_STD = [0,0,0] #TO DO compute
+CHEXPERT_MEAN = [0.5029, 0.5029, 0.5029]
+CHEXPERT_STD = [0.2899, 0.2899, 0.2899]
 
 
 def main():

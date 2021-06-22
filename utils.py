@@ -1,11 +1,7 @@
 """Utility methods"""
 
 import os
-from chexpert_data import CheXpertDataSet
 
-import torchvision.transforms as transforms
-from torch.utils.data import DataLoader
-import torch
 
 def check_path(path, warn_exists=True, require_exists=False):
 
@@ -41,45 +37,3 @@ def check_path(path, warn_exists=True, require_exists=False):
         print(f"Created {path}")
 
     return path
-
-def get_mean_std(data_path='./', csv_file='train.csv'):
-
-    #THIS IS TOO SLOW
-
-    #https://discuss.pytorch.org/t/computing-the-mean-and-std-of-dataset/34949/2
-    """Calculates mean and standard deviation of CheXpert data.
-    Args:
-        data_path: Where data lives. Directory that contains 'CheXpert-v1.0-small/'.
-        csv_file: CSV containing subset of images that should be taken into account for calculation.
-    Note: This returns 3x the same value for mean and std, because the images are greyscale.
-    It's necessary to use this however when making use of a pretrained network with a defined input shape.
-    """
-
-    #dummy variables
-    class_idx=[0]
-    policy='zeros'
-
-    transform_sequence = transforms.Compose([transforms.Resize((320,390)), #because one image has 389 pixels, not 390
-                                            transforms.ToTensor()])
-
-    pathFileTrain = data_path + 'CheXpert-v1.0-small/' + csv_file
-    dataset = CheXpertDataSet(data_path, pathFileTrain, class_idx, policy, transform = transform_sequence)
-
-    batch_size = 50
-    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False)
-
-    mean = 0.0
-    var = 0.0
-    b = 0
-    for images, _ in dataloader:
-        batch_samples = images.size(0)
-        images = images.view(batch_samples, images.size(1), -1)
-        mean += images.mean(2).sum(0)
-        var += ((images - mean.unsqueeze(1))**2).sum([0,2])
-        b += batch_size
-        print(f"{b} images processed")
-    mean = mean / len(dataset)
-    std = torch.sqrt(var / (len(dataset)*images.size(2)))
-
-
-    return mean, std
