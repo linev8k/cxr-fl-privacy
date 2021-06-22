@@ -44,6 +44,8 @@ def check_path(path, warn_exists=True, require_exists=False):
 
 def get_mean_std(data_path='./', csv_file='train.csv'):
 
+    #THIS IS TOO SLOW
+
     #https://discuss.pytorch.org/t/computing-the-mean-and-std-of-dataset/34949/2
     """Calculates mean and standard deviation of CheXpert data.
     Args:
@@ -63,20 +65,21 @@ def get_mean_std(data_path='./', csv_file='train.csv'):
     pathFileTrain = data_path + 'CheXpert-v1.0-small/' + csv_file
     dataset = CheXpertDataSet(data_path, pathFileTrain, class_idx, policy, transform = transform_sequence)
 
-    dataloader = DataLoader(dataset=dataset, batch_size=50, shuffle=False)
+    batch_size = 50
+    dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False)
 
     mean = 0.0
+    var = 0.0
+    b = 0
     for images, _ in dataloader:
         batch_samples = images.size(0)
         images = images.view(batch_samples, images.size(1), -1)
         mean += images.mean(2).sum(0)
-    mean = mean / len(dataset)
-
-    var = 0.0
-    for images, _ in dataloader:
-        batch_samples = images.size(0)
-        images = images.view(batch_samples, images.size(1), -1)
         var += ((images - mean.unsqueeze(1))**2).sum([0,2])
+        b += batch_size
+        print(f"{b} images processed")
+    mean = mean / len(dataset)
     std = torch.sqrt(var / (len(dataset)*images.size(2)))
+
 
     return mean, std
