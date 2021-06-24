@@ -12,9 +12,11 @@
   "eps": 1e-08,
   "weight_decay": 0,
 
+  "num_clients": 1,
+  "client_dirs": ["client0"],
+
   "batch_size": 8,
   "max_epochs": 1,
-  "num_clients": 5,
   "com_rounds": 1,
   "fraction": 1
 }

@@ -15,7 +15,9 @@ from utils import check_path
 
 #ADJUST THIS
 ORIG_CSV = 'train.csv' #name of csv to split
+SUB_DIR = './' #subdirectory within data path in which to save csv files
 CSV_NAMES = ['train_mod.csv', 'test_mod.csv'] #filenames for saving
+CSV_NAMES = [SUB_DIR + csv_name for csv_name in CSV_NAMES]
 SPLIT_PERC = [0.8,0.2] #fractions for splitting original data
 
 

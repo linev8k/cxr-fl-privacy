@@ -13,9 +13,6 @@ from torch import nn
 from torch import optim
 from torch.backends import cudnn
 
-#TODO
-#monitor training progress: loss, val accuracy (?)
-
 
 class Trainer():
 
@@ -237,3 +234,38 @@ class DenseNet121(nn.Module):
     def forward(self, x):
         x = self.densenet121(x)
         return x
+
+
+class Client():
+
+    def __init__(self, name, train_file=None, val_file=None, test_file=None):
+
+        self.name = name
+
+        self.train_file = train_file
+        self.train_data = val_file
+        self.train_loader = test_file
+
+        self.val_file = None
+        self.val_data = None
+        self.val_loader = None
+
+        self.test_file = None
+        self.test_data = None
+        self.test_loader = None
+
+        self.n_data = None
+        self.output_path = None
+
+        self.model_params = None
+
+    def get_data_len(self):
+
+        """Return number of data points currently held by client (all splits taken together)."""
+
+        n_data = 0
+        for data in [self.train_data, self.val_data, self.test_data]:
+            if data != None:
+                n_data += len(data)
+
+        return n_data
