@@ -63,14 +63,15 @@ class Trainer():
             lossv, aurocMean = Trainer.epochVal(model, dataLoaderVal, optimizer, loss, use_gpu)
             print("Training loss: {:.3f},".format(losst), "Valid loss: {:.3f}".format(lossv))
 
-            #save best model to checkpoint
+            #save model to checkpoint
+            model_num = epochID + 1
+            torch.save({'epoch': model_num, 'state_dict': model.state_dict(),
+                        'loss': lossMIN, 'optimizer' : optimizer.state_dict()},
+                       f"{output_path}{model_num}-epoch_FL.pth.tar")
+
             if lossv < lossMIN:
                 lossMIN = lossv
-                model_num = epochID + 1
-                torch.save({'epoch': model_num, 'state_dict': model.state_dict(),
-                            'best_loss': lossMIN, 'optimizer' : optimizer.state_dict()},
-                           f"{output_path}{model_num}-epoch_FL.pth.tar")
-                print('Epoch ' + str(model_num) + ' [save] val loss decreased')
+                print('Epoch ' + str(model_num) + ' [++++] val loss decreased')
                 params = model.state_dict() #store parameters of best model
             else:
                 print('Epoch ' + str(model_num) + ' [----] val loss did not decrease')

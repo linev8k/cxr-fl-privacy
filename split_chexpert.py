@@ -14,11 +14,11 @@ import random
 from utils import check_path
 
 #ADJUST THIS
-ORIG_CSV = 'train.csv' #name of csv to split
-SUB_DIR = './' #subdirectory within data path in which to save csv files
-CSV_NAMES = ['train_mod.csv', 'test_mod.csv'] #filenames for saving
+ORIG_CSV = 'client4.csv' #name of csv to split
+SUB_DIR = 'client4/' #subdirectory within data path in which to save csv files
+CSV_NAMES = ['client_train.csv', 'client_val.csv', 'client_test.csv'] #filenames for saving
 CSV_NAMES = [SUB_DIR + csv_name for csv_name in CSV_NAMES]
-SPLIT_PERC = [0.8,0.2] #fractions for splitting original data
+SPLIT_PERC = [0.7,0.15, 0.15] #fractions for splitting original data
 
 
 def main():
@@ -62,6 +62,7 @@ def main():
     #create CSVs
     for i in range(len(SPLIT_PERC)):
         split_data[i].to_csv(data_path+'CheXpert-v1.0-small/'+CSV_NAMES[i], index = False)
+        print(f"Split {i}: {len(split_data[i])} images")
 
     # print(f"Train data length:", len(Traindata))
     # Validdata.to_csv(data_path+'CheXpert-v1.0-small/valid_mod.csv', index = False)
@@ -111,7 +112,7 @@ def split_df(chex_df, random_seed, split_perc):
     end = 0
     for perc in split_perc:
         #calculate number of samples per patient split
-        cur_sample_size = int(num_patients*perc)
+        cur_sample_size = round(num_patients*perc)
         num_split.append(cur_sample_size)
         end += cur_sample_size
         patient_splits.append(unique_patients[start:end]) #split patients

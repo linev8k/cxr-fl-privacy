@@ -21,7 +21,7 @@ from torch.utils.data.dataset import random_split
 #local imports
 from chexpert_data import CheXpertDataSet
 from trainer import Trainer, DenseNet121, Client
-from utils import check_path
+from utils import check_path, merge_eval_csv
 
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]  # mean of ImageNet dataset(for normalization)
@@ -116,32 +116,6 @@ def main():
                                             # transforms.Normalize(data_mean, data_std)
                                             ])
 
-    # Load dataset
-    # datasetTrain = CheXpertDataSet(data_path, pathFileTrain, class_idx, policy, transform = train_transformSequence)
-    # len_train = len(datasetTrain)
-    # print("Train data length:", len_train)
-    #
-    # #remove transformations here?
-    # datasetValid = CheXpertDataSet(data_path, pathFileValid, class_idx, policy, transform = test_transformSequence)
-    # print("Valid data length:", len(datasetValid))
-    #
-    # datasetTest = CheXpertDataSet(data_path, pathFileTest, class_idx, policy, transform = test_transformSequence)
-    # print("Test data length:", len(datasetTest))
-    #
-    # assert datasetTrain[0][0].shape == torch.Size([3,imgtransResize,imgtransResize])
-    # assert datasetTrain[0][1].shape == torch.Size([nnClassCount])
-
-    #IID distributed data, balanced, mixing patients between sites
-    # split_trainData = get_client_data_split(len_train, num_clients)
-
-    #datasets and dataloaders for training data
-    # datasetsClients = random_split(datasetTrain, split_trainData)
-    # dataloadersClients = []
-
-    # for client_dataset in datasetsClients:
-        # dataloadersClients.append(DataLoader(dataset=client_dataset, batch_size=trBatchSize, shuffle=True,
-                                            # num_workers=4, pin_memory=True))
-
     #Create dataLoaders, normal training
     # dataLoaderTrain = DataLoader(dataset=datasetTrain, batch_size=trBatchSize, shuffle=True, num_workers=2, pin_memory=True)
     # print('Length train dataloader (n batches): ', len(dataLoaderTrain))
@@ -158,7 +132,7 @@ def main():
 
         path_to_client = check_path(data_path + 'CheXpert-v1.0-small/' + client_dirs[i], warn_exists=False, require_exists=True)
 
-        cur_client.train_file =  path_to_client + 'client_train.csv'
+        cur_client.train_file = path_to_client + 'client_train.csv'
         cur_client.val_file = path_to_client + 'client_val.csv'
         cur_client.test_file = path_to_client + 'client_test.csv'
 
@@ -181,8 +155,12 @@ def main():
         cur_client.test_loader = DataLoader(dataset = cur_client.test_data, num_workers = 4, pin_memory = True)
 
     #show images for testing
-    # for batch in dataloadersClients[0]:
-    #     # transforms.ToPILImage()(batch[0][0]).show()
+    # for batch in clients[0].train_loader:
+    #     transforms.ToPILImage()(batch[0][0]).show()
+    #     print(batch[1][0])
+    #
+    # for batch in clients[0].val_loader:
+    #     transforms.ToPILImage()(batch[0][0]).show()
     #     print(batch[1][0])
 
 
@@ -225,6 +203,7 @@ def main():
 
             train_valid_start = time.time()
             # Step 3: Perform local computations
+            # returns local best model
             client_k.model_params = Trainer.train(model, client_k.train_loader, client_k.val_loader,
                                               class_idx, cfg, client_k.output_path, use_gpu, out_csv=f"round{i}_{client_k.name}.csv")
 
@@ -234,7 +213,7 @@ def main():
 
         trained_clients = [cl for cl in clients if cl.model_params != None]
         first_cl = trained_clients[0]
-        last_cl = trained_clients[-1]
+        # last_cl = trained_clients[-1]
         print(f"{[cl.name for cl in trained_clients]}")
 
         # Step 4: return updates to server
@@ -244,31 +223,41 @@ def main():
             for cl in sel_clients:
                 weights.append(cl.model_params[key]*len(cl.train_data))
                 weightn.append(len(cl.train_data))
-            #store in parameter list, last client
-            last_cl.model_params[key] = sum(weights) / sum(weightn) # weighted averaging model weights
+            #store parameters with first client for convenience
+            first_cl.model_params[key] = sum(weights) / sum(weightn) # weighted averaging model weights
 
         if use_gpu:
             model = DenseNet121(nnClassCount).cuda()
             model = torch.nn.DataParallel(model).cuda()
         # Step 5: server updates global state
-        model.load_state_dict(last_cl.model_params)
+        model.load_state_dict(first_cl.model_params)
+        # also save intermediate models
+        torch.save(model.state_dict(),
+                   output_path + f"global_{i}rounds.pth.tar")
         print(f"[[[ Round {i} End ]]]\n")
 
     print("Global model trained")
     fed_end = time.time()
     print(f"Total training time: {round(fed_end-fed_start,0)}")
 
-    #save for inference
-    torch.save(model.state_dict(), output_path+f"global_{com_rounds}rounds.pth.tar")
+
+    try:
+        merge_eval_csv(output_path, out_file='train_results.csv')
+    except:
+        print("Merging result CSVs failed. Try again manually.")
+
+    #normal training
+    # start = time.time()
+    # params = Trainer.train(model, dataLoaderTrain, dataLoaderVal, class_idx, cfg, output_path, use_gpu)
+    # end = time.time()
+    # print(f"Total time: {end-start}")
+
+    # outGT, outPRED, auroc_mean = Trainer.test(model, clients[0].val_loader, class_idx, use_gpu,
+    #                                     checkpoint= output_path+f"global_{com_rounds}rounds.pth.tar")
     #
-    # #normal training
-    # # start = time.time()
-    # # params = Trainer.train(model, dataLoaderTrain, dataLoaderVal, class_idx, cfg, output_path, use_gpu)
-    # # end = time.time()
-    # # print(f"Total time: {end-start}")
-    #
-    # # outGT, outPRED, auroc_mean = Trainer.test(model, dataLoaderTest, class_idx, use_gpu,
-    # #                                     checkpoint= output_path+f"global_{com_rounds}rounds.pth.tar")
+    # print(outGT)
+    # print(outPRED)
+    # print(auroc_mean)
 
 
 
@@ -282,23 +271,6 @@ def check_gpu_usage(use_gpu):
 
     return True
 
-def get_client_data_split(len_data, num_clients):
-
-    """Return a list with amount of data that should be provided to clients.
-    One list element represents one client.
-    For now assumes that data should be balanced between clients.
-    """
-
-    print(f"{num_clients} clients")
-    data_per_client = len_data//num_clients
-    print(f"Data per client: ", data_per_client)
-    data_left = len_data - data_per_client*num_clients
-    print(f"Data left: ", data_left)
-    #last client gets the rest, will be at most num_clients different from others
-    data_split = [data_per_client for i in range(num_clients-1)] + [data_per_client + data_left]
-    print(f"Data-client split: ", data_split)
-
-    return data_split
 
 
 
