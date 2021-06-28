@@ -9,8 +9,9 @@ The project explores the application of mechanisms to defend a federated learnin
 Split CheXpert data without patient overlap. Currently, this splits the data randomly without any sorting mechanism.  
 Insert the name of the CSV with data that should be split (can be original or subset of CheXpert data), the names of the CSVs for the resulting splits, and the percentages of the splits in the script:  
 ```python
-ORIG_CSV = 'train.csv' #name of csv to split
-CSV_NAMES = ['train_mod.csv', 'test_mod.csv'] #filenames for saving
+ORIG_CSV = 'client4.csv' #name of csv to split
+SUB_DIR = 'client4/' #subdirectory within data path in which to save csv files
+CSV_NAMES = ['client_train.csv', 'client_test.csv'] #filenames for saving
 SPLIT_PERC = [0.8,0.2] #fractions for splitting original data
 ```
 Run the script:  
