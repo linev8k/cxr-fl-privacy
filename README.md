@@ -4,7 +4,7 @@ The project explores the application of mechanisms to defend a federated learnin
 
 # Script Usage Examples
 
-**Splitting of CheXpert data**  
+**Split CheXpert data**  
 
 Split CheXpert data without patient overlap. Currently, this splits the data randomly without any sorting mechanism.  
 Insert the name of the CSV with data that should be split (can be original or subset of CheXpert data), the names of the CSVs for the resulting splits, and the percentages of the splits in the script:  
@@ -23,7 +23,7 @@ Specify the path where data lives (this path should contain ```CheXpert-v1.0-sma
 python3 split_chexpert.py config.json -d  path_to_chexpert/
 ```
 
-**Training a network using federated learning**   
+**Train a network using federated learning**   
 Using a GPU and verifying its availability can be turned off with ```--no_gpu``` flag:   
 ```sh
 python3 train_FL.py config.json [--no_gpu]
@@ -40,6 +40,13 @@ Specify the path where data lives (this path should contain ```CheXpert-v1.0-sma
 ```sh
 python3 train_FL.py config.json -d path_to_chexpert/
 ```
+
+**Test a model**  
+Test a model on individual test data sets of clients. Usage is similar to ```train_FL.py```. Specify path to model to test:  
+```sh
+python3 test_model.py config.json -m ./results/global_2rounds.pth.tar
+```
+Make sure to use the correct ```config``` file, pay attention to dataset settings such as ```class_idx```, as well as ```num_clients``` and ```client_dirs```. Those should be the same as used for model training.
 
 # Result Output
 
