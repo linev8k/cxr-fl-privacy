@@ -41,6 +41,27 @@ Specify the path where data lives (this path should contain ```CheXpert-v1.0-sma
 python3 train_FL.py config.json -d path_to_chexpert/
 ```
 
+# Result Output
+
+All models are saved in the directory specified with ```--output_path``` or ```-o```.  At the end of training, this directory will have the following structure:  
+
+```
+.
+├── round0_client0 						# directory with results from first round, first client
+|		└── 1-epoch_FL.pth.tar 		# model checkpoint per epoch
+|		└── ...
+|		└── round0_client0.csv 		# CSV containing client result metrics per epoch
+├── round0_client1 						# first round, second client
+|	  └── ...
+├──	round1_client0 						# second round, first client
+|		└── ...
+├── ...
+├── global_0rounds.pth.tar 		# checkpoint of global model per round
+├── ...
+├── global_validation.csv 		# CSV containing AUC for global models
+├── train_results.csv 				# merged CSV summarizing individual client's metrics
+```
+
 
 ## Acknowledgements
 

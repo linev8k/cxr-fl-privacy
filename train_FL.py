@@ -12,6 +12,8 @@ import json
 from PIL import Image
 import time
 import random
+import numpy as np
+import csv
 
 import torch
 import torchvision.transforms as transforms
@@ -133,7 +135,7 @@ def main():
         path_to_client = check_path(data_path + 'CheXpert-v1.0-small/' + client_dirs[i], warn_exists=False, require_exists=True)
 
         cur_client.train_file = path_to_client + 'client_train.csv'
-        cur_client.val_file = path_to_client + 'client_val.csv'
+        cur_client.val_file = path_to_client + 'client_train.csv'
         cur_client.test_file = path_to_client + 'client_test.csv'
 
         cur_client.train_data = CheXpertDataSet(data_path, cur_client.train_file, class_idx, policy, transform = train_transformSequence)
@@ -176,6 +178,8 @@ def main():
 
     fed_start = time.time()
     #FEDERATED LEARNING
+    global_auc = []
+
     for i in range(com_rounds):
 
         print(f"[[[ Round {i} Start ]]]")
@@ -234,7 +238,25 @@ def main():
         # also save intermediate models
         torch.save(model.state_dict(),
                    output_path + f"global_{i}rounds.pth.tar")
+
+        #validate global model on client validation data
+        print("Validating global model...")
+        aurocMean_global = []
+        for cl in clients:
+            _, _, cl_aurocMean = Trainer.test(model, cl.val_loader, class_idx, use_gpu, checkpoint=None)
+            aurocMean_global.append(cl_aurocMean)
+        cur_auc_global = np.array(aurocMean_global).mean()
+        print("AUC Mean: {:.3f}".format(cur_auc_global))
+        global_auc.append(cur_auc_global)
+
         print(f"[[[ Round {i} End ]]]\n")
+
+    all_metrics = [list(range(com_rounds)), global_auc]
+    with open(output_path+'global_validation.csv', 'w') as f:
+        header = ['round', 'val AUC']
+        writer = csv.writer(f)
+        writer.writerow(header)
+        writer.writerows(zip(*all_metrics))
 
     print("Global model trained")
     fed_end = time.time()

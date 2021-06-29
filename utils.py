@@ -59,24 +59,26 @@ def merge_eval_csv(result_path, out_file='train_results.csv'):
     for root, _, files in os.walk('.'):
         for file in files:
             if file.endswith('.csv'):
+                # exclude global validation file because it has a different structure
+                if file != 'global_validation.csv':
 
-                cur_csv_path = os.path.realpath(os.path.join(root,file)) # whole path to csv
-                cur_csv = cur_csv_path.split("/")[-1] # name of csv
-                print(f'Reading {cur_csv}')
+                    cur_csv_path = os.path.realpath(os.path.join(root,file)) # whole path to csv
+                    cur_csv = cur_csv_path.split("/")[-1] # name of csv
+                    print(f'Reading {cur_csv}')
 
-                cur_df = pd.read_csv(cur_csv_path)
+                    cur_df = pd.read_csv(cur_csv_path)
 
-                # extract round and client info from csv name
-                n_round = cur_csv[5]
-                n_client = cur_csv[13]
-                try:
-                    cur_df.insert(0,'round',n_round)
-                    cur_df.insert(1,'client',n_client)
-                except ValueError: # exit with error if a merged file is detected
-                    print(f'{file} seems to already be a merged file. Delete or move to be able to create a new file.')
-                    raise
+                    # extract round and client info from csv name
+                    n_round = cur_csv[5]
+                    n_client = cur_csv[13]
+                    try:
+                        cur_df.insert(0,'round',n_round)
+                        cur_df.insert(1,'client',n_client)
+                    except ValueError: # exit with error if a merged file is detected
+                        print(f'{file} seems to already be a merged file. Delete or move to be able to create a new file.')
+                        raise
 
-                result_df = result_df.append(cur_df)
+                    result_df = result_df.append(cur_df)
 
     result_df.reset_index(inplace=True, drop=True)
 
