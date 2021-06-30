@@ -3,7 +3,7 @@
 
 #set which GPUs to use
 import os
-selected_gpus = [6,7] #configure this
+selected_gpus = [0,1,4,5] #configure this
 os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(gpu) for gpu in selected_gpus])
 
 import pandas as pd
@@ -101,7 +101,8 @@ def main():
     # if using augmentation, use different transforms for training, test & val data
     train_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
                                             # transforms.RandomResizedCrop(imgtransResize),
-                                            # transforms.RandomHorizontalFlip(),
+                                            transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
+                                            transforms.RandomHorizontalFlip(),
                                             transforms.ToTensor(),
                                             transforms.Normalize(data_mean, data_std)
                                             ])
@@ -120,7 +121,7 @@ def main():
         path_to_client = check_path(data_path + 'CheXpert-v1.0-small/' + client_dirs[i], warn_exists=False, require_exists=True)
 
         cur_client.train_file = path_to_client + 'client_train.csv'
-        cur_client.val_file = path_to_client + 'client_train.csv'
+        cur_client.val_file = path_to_client + 'client_val.csv'
         cur_client.test_file = path_to_client + 'client_test.csv'
 
         cur_client.train_data = CheXpertDataSet(data_path, cur_client.train_file, class_idx, policy, transform = train_transformSequence)
@@ -141,7 +142,7 @@ def main():
                                             num_workers=4, pin_memory=True)
         cur_client.test_loader = DataLoader(dataset = cur_client.test_data, num_workers = 4, pin_memory = True)
 
-    #show images for testing
+    # show images for testing
     # for batch in clients[0].train_loader:
     #     transforms.ToPILImage()(batch[0][0]).show()
     #     print(batch[1][0])
