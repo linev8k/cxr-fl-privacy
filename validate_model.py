@@ -168,7 +168,7 @@ def main():
 
     for i in range(com_rounds):
 
-        checkpoint = '/scratch/joceline.ziegler/fl_baseline' + f"global_{i}rounds.pth.par"
+        checkpoint = '/scratch/joceline.ziegler/fl_baseline/' + f"global_{i}rounds.pth.tar" #adjust checkpoint
         modelCheckpoint = torch.load(checkpoint)
         model.load_state_dict(modelCheckpoint)
 
