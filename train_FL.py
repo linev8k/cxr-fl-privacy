@@ -195,7 +195,7 @@ def main():
             # Step 3: Perform local computations
             # returns local best model
             client_k.model_params = Trainer.train(model, client_k.train_loader, client_k.val_loader,
-                                              class_idx, cfg, client_k.output_path, use_gpu, out_csv=f"round{i}_{client_k.name}.csv")
+                                               cfg, client_k.output_path, use_gpu, out_csv=f"round{i}_{client_k.name}.csv")
 
             train_valid_end = time.time()
             client_time = round(train_valid_end - train_valid_start)

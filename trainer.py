@@ -16,7 +16,7 @@ from torch.backends import cudnn
 
 class Trainer():
 
-    def train(model, dataLoaderTrain, dataLoaderVal, class_idx, cfg, output_path, use_gpu, out_csv='train_log.csv', checkpoint=None):
+    def train(model, dataLoaderTrain, dataLoaderVal, cfg, output_path, use_gpu, out_csv='train_log.csv', checkpoint=None):
 
 
         """Train a model.
@@ -24,7 +24,6 @@ class Trainer():
             model: Instance of the model to be trained.
             dataLoaderTrain: Dataloader for training data.
             dataLoaderVal: Dataloader for validation data.
-            class_idx: Indices of labels to use for training.
             cfg: Config dictionary containing training parameters.
             output_path: Path where results should be saved.
             use_gpu: Whether to use available GPUs.
