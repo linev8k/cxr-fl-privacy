@@ -3,7 +3,7 @@
 
 #set which GPUs to use
 import os
-selected_gpus = [0] #configure this
+selected_gpus = [7] #configure this
 os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(gpu) for gpu in selected_gpus])
 
 import pandas as pd
@@ -182,6 +182,7 @@ def main():
 
     # check if validation or test data should be used
     if args.use_val:
+        print('Using validation data')
         for cl in clients:
             _, _, cl_aurocMean = Trainer.test(model, cl.val_loader, class_idx, use_gpu, checkpoint=None)
             aurocMean_global_clients.append(cl_aurocMean)
@@ -192,14 +193,14 @@ def main():
 
     # mean of client AUCs
     auc_global = np.array(aurocMean_global_clients).mean()
-    print("AUC Mean: {:.3f}".format(auc_global))
-
+    print("AUC Mean of all clients: {:.3f}".format(auc_global))
+    aurocMean_global_clients.append(auc_global) # save mean
+    save_clients = [cl.name for cl in clients]
+    save_clients.append('avg')
 
     # save AUC in CSV
-    all_metrics = [[cl.name for cl in clients].append('avg'), aurocMean_global_clients.append(auc_global)]
-    print([cl.name for cl in clients].append('avg'))
-    print(aurocMean_global_clients.append(auc_global))
-    print(all_metrics)
+    print(f'Saving in {output_path+CSV_OUTPUT_NAME}') 
+    all_metrics = [save_clients, aurocMean_global_clients]
     with open(output_path+CSV_OUTPUT_NAME, 'w') as f:
         header = ['client', 'AUC']
         writer = csv.writer(f)
