@@ -46,6 +46,11 @@ Test a model on individual test data sets of clients. Usage is similar to ```tra
 ```sh
 python3 test_model.py config.json -m ./results/global_2rounds.pth.tar
 ```
+By default, the test data set of each client is used. If you want to use the validation sets, do:  
+```sh
+python3 test_model.py config.json -m ./results/global_2rounds.pth.tar --val
+```
+A CSV file with the results is saved in the output path. You can change ```CSV_OUTPUT_NAME``` in the script.  
 Make sure to use the correct ```config``` file, pay attention to dataset settings such as ```class_idx```, as well as ```num_clients``` and ```client_dirs```. Those should be the same as used for model training.
 
 # Result Output
