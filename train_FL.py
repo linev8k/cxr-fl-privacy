@@ -3,7 +3,7 @@
 
 #set which GPUs to use
 import os
-selected_gpus = [0,1,4,5] #configure this
+selected_gpus = [5] #configure this
 os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(gpu) for gpu in selected_gpus])
 
 import pandas as pd
@@ -87,6 +87,7 @@ def main():
     fraction = cfg['fraction']
     com_rounds = cfg['com_rounds']
     earl_stop_rounds = cfg['earl_stop_rounds']
+    reduce_lr_rounds = cfg['reduce_lr_rounds']
 
     data_path = check_path(args.chexpert_path, warn_exists=False, require_exists=True)
 
@@ -156,7 +157,7 @@ def main():
     #create model
     if use_gpu:
         model = DenseNet121(nnClassCount, nnIsTrained).cuda()
-        model=torch.nn.DataParallel(model).cuda()
+        # model=torch.nn.DataParallel(model).cuda()
     else:
         model = DenseNet121(nnClassCount, nnIsTrained)
 
@@ -167,11 +168,16 @@ def main():
     #FEDERATED LEARNING
     global_auc = []
     best_global_auc = 0
-    track_early_stopping = 0
+    track_no_improv = 0
 
     for i in range(com_rounds):
 
         print(f"[[[ Round {i} Start ]]]")
+
+        # decay lr
+        if (i+1) % reduce_lr_rounds == 0:
+            cfg['lr'] = cfg['lr'] * 0.1
+            print(f'Learning rate reduced to {cfg['lr']}')
 
         # Step 1: select random fraction of clients
         if fraction < 1:
@@ -221,7 +227,7 @@ def main():
 
         if use_gpu:
             model = DenseNet121(nnClassCount).cuda()
-            model = torch.nn.DataParallel(model).cuda()
+            # model = torch.nn.DataParallel(model).cuda()
         # Step 5: server updates global state
         model.load_state_dict(first_cl.model_params)
         # also save intermediate models
@@ -238,12 +244,12 @@ def main():
         print("AUC Mean: {:.3f}".format(cur_global_auc))
         global_auc.append(cur_global_auc)
 
-        # early stopping
+        # track early stopping
         if cur_global_auc > best_global_auc:
             best_global_auc = cur_global_auc
         else:
-            track_early_stopping += 1
-            if track_early_stopping == earl_stop_rounds:
+            track_no_improv += 1
+            if track_no_improv == earl_stop_rounds:
                 print(f'Global AUC has not improved for {earl_stop_rounds} rounds. Stopping training.')
                 break
 
