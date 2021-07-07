@@ -248,7 +248,7 @@ def main():
             if track_no_improv == reduce_lr_rounds:
                 # decay lr
                 cfg['lr'] = cfg['lr'] * 0.1
-                print(f'Learning rate reduced to {cfg['lr']}')
+                print(f"Learning rate reduced to {cfg['lr']}")
             elif track_no_improv == earl_stop_rounds:
                 print(f'Global AUC has not improved for {earl_stop_rounds} rounds. Stopping training.')
                 break
