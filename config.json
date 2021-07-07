@@ -12,7 +12,7 @@
   "eps": 1e-08,
   "weight_decay": 1e-5,
   "earl_stop_rounds": 5,
-  "reduce_lr_rounds": 4,
+  "reduce_lr_rounds": 3,
 
   "num_clients": 5,
   "client_dirs": ["client0", "client1", "client2", "client3", "client4"],

@@ -174,11 +174,6 @@ def main():
 
         print(f"[[[ Round {i} Start ]]]")
 
-        # decay lr
-        if (i+1) % reduce_lr_rounds == 0:
-            cfg['lr'] = cfg['lr'] * 0.1
-            print(f'Learning rate reduced to {cfg['lr']}')
-
         # Step 1: select random fraction of clients
         if fraction < 1:
             sel_clients = sorted(random.sample(clients,
@@ -244,12 +239,17 @@ def main():
         print("AUC Mean: {:.3f}".format(cur_global_auc))
         global_auc.append(cur_global_auc)
 
-        # track early stopping
+        # track early stopping & lr decay
         if cur_global_auc > best_global_auc:
             best_global_auc = cur_global_auc
+            track_no_improv = 0
         else:
             track_no_improv += 1
-            if track_no_improv == earl_stop_rounds:
+            if track_no_improv == reduce_lr_rounds:
+                # decay lr
+                cfg['lr'] = cfg['lr'] * 0.1
+                print(f'Learning rate reduced to {cfg['lr']}')
+            elif track_no_improv == earl_stop_rounds:
                 print(f'Global AUC has not improved for {earl_stop_rounds} rounds. Stopping training.')
                 break
 
