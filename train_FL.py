@@ -86,6 +86,7 @@ def main():
     assert num_clients == len(client_dirs), "Number of clients doesn't correspond to number of directories specified"
     fraction = cfg['fraction']
     com_rounds = cfg['com_rounds']
+    earl_stop_rounds = cfg['earl_stop_rounds']
 
     data_path = check_path(args.chexpert_path, warn_exists=False, require_exists=True)
 
@@ -165,6 +166,8 @@ def main():
     fed_start = time.time()
     #FEDERATED LEARNING
     global_auc = []
+    best_global_auc = 0
+    track_early_stopping = 0
 
     for i in range(com_rounds):
 
@@ -231,9 +234,18 @@ def main():
         for cl in clients:
             _, _, cl_aurocMean = Trainer.test(model, cl.val_loader, class_idx, use_gpu, checkpoint=None)
             aurocMean_global.append(cl_aurocMean)
-        cur_auc_global = np.array(aurocMean_global).mean()
-        print("AUC Mean: {:.3f}".format(cur_auc_global))
-        global_auc.append(cur_auc_global)
+        cur_global_auc = np.array(aurocMean_global).mean()
+        print("AUC Mean: {:.3f}".format(cur_global_auc))
+        global_auc.append(cur_global_auc)
+
+        # early stopping
+        if cur_global_auc > best_global_auc:
+            best_global_auc = cur_global_auc
+        else:
+            track_early_stopping += 1
+            if track_early_stopping == earl_stop_rounds:
+                print(f'Global AUC has not improved for {earl_stop_rounds} rounds. Stopping training.')
+                break
 
         print(f"[[[ Round {i} End ]]]\n")
 
