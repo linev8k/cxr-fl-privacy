@@ -69,8 +69,12 @@ def merge_eval_csv(result_path, out_file='train_results.csv'):
                     cur_df = pd.read_csv(cur_csv_path)
 
                     # extract round and client info from csv name
-                    n_round = cur_csv[5]
-                    n_client = cur_csv[13]
+                    parts = cur_csv.split('_')
+                    round_part = parts[0]
+                    client_part = parts[1][:-4] # remove .csv
+                    n_round = round_part.replace('round', '') # only keep number
+                    n_client = client_part.replace('client', '')
+
                     try:
                         cur_df.insert(0,'round',n_round)
                         cur_df.insert(1,'client',n_client)
