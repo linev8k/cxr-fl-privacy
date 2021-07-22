@@ -3,7 +3,7 @@
 
 #set which GPUs to use
 import os
-selected_gpus = [7] #configure this
+selected_gpus = [4] #configure this
 os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(gpu) for gpu in selected_gpus])
 
 import pandas as pd
@@ -24,7 +24,7 @@ from chexpert_data import CheXpertDataSet
 from trainer import Trainer, DenseNet121, Client
 from utils import check_path
 
-CSV_OUTPUT_NAME = 'test_model.csv' # name for file in which to store results
+CSV_OUTPUT_NAME = 'test_model_client5.csv' # name for file in which to store results
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]  # mean of ImageNet dataset(for normalization)
 IMAGENET_STD = [0.229, 0.224, 0.225]   # std of ImageNet dataset(for normalization)
@@ -173,7 +173,7 @@ def main():
     if 'state_dict' in modelCheckpoint:
         model.load_state_dict(modelCheckpoint['state_dict'])
     else:
-        model.load_state_dict(modelCheckpoint)
+        model.load_state_dict(modelCheckpoint, strict=False)
 
     #validate global model on client validation data
     print("Validating model on each client's data...")
@@ -184,8 +184,10 @@ def main():
     if args.use_val:
         print('Using validation data')
         for cl in clients:
-            _, _, cl_aurocMean = Trainer.test(model, cl.val_loader, class_idx, use_gpu, checkpoint=None)
+            LABEL, PRED, cl_aurocMean = Trainer.test(model, cl.val_loader, class_idx, use_gpu, checkpoint=None)
             aurocMean_global_clients.append(cl_aurocMean)
+            print(LABEL)
+            print(PRED)
     else:
         for cl in clients:
             _, _, cl_aurocMean = Trainer.test(model, cl.test_loader, class_idx, use_gpu, checkpoint=None)
