@@ -1,5 +1,5 @@
 """
-This script is used for getting the mean and std for our own dataset.
+Get the mean and std for CheXpert data.
 """
 #https://github.com/wll199566/CheXpert/blob/master/statistics.py
 
@@ -18,7 +18,7 @@ import torchvision
 from torchvision import transforms
 
 # get the path for train_csv file and valid_csv file
-csv_root_path = "/hpi/fs00/share/fg-arnrich/datasets/chexpert/CheXpert-v1.0-small/"
+csv_root_path = "/hpi/fs00/share/fg-arnrich/datasets/xray_FL/CheXpert-v1.0-small/"
 train_csv_filename = "train.csv"
 valid_csv_filename = "valid.csv"
 
@@ -30,7 +30,7 @@ with open(csv_root_path+valid_csv_filename, "rt") as fin:
     valid_df = pd.read_csv(fin)
 
 # get the path
-image_root_path = "/hpi/fs00/share/fg-arnrich/datasets/chexpert/"
+image_root_path = "/hpi/fs00/share/fg-arnrich/datasets/xray_FL/"
 train_image_filenames = np.asarray(train_df.iloc[:, 0])
 valid_image_filenames = np.asarray(valid_df.iloc[:, 0])
 
