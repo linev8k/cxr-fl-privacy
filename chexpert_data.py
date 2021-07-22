@@ -1,5 +1,7 @@
 #https://github.com/Stomper10/CheXpert/blob/master/materials.py
-"""Dataset class for CheXpert data"""
+"""Dataset class for CheXpert data.
+Can also process other data, but CSV containing metadata has to have the same structure as
+CheXpert CSV."""
 
 import csv
 from PIL import Image
@@ -12,7 +14,7 @@ from torch.utils.data import Dataset
 class CheXpertDataSet(Dataset):
     def __init__(self, data_path, data_file, class_idx, policy, transform = None):
         """
-        data_path: path to where the data lives. This directory should contain CheXpert-v1.0-small/.
+        data_path: path to where the data lives. 
         data_file: path to the file containing image paths with corresponding labels.
         class_idx: Indices of findings/classes to be included.
         policy: name the policy with regard to the uncertainty labels.

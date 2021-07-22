@@ -36,9 +36,9 @@ Add the path where results should be stored:
 ```sh
 python3 train_FL.py config.json -o path_to_results/
 ```
-Specify the path where data lives (this path should contain ```CheXpert-v1.0-small/```)
+Specify the path where data lives:
 ```sh
-python3 train_FL.py config.json -d path_to_chexpert/
+python3 train_FL.py config.json -d path_to_data/
 ```
 
 **Test a model**  

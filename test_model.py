@@ -44,7 +44,7 @@ def main():
     #output path for storing results
     parser.add_argument('--output_path', '-o', help = 'Path to save results.', default = 'results/')
     #set path to chexpert data
-    parser.add_argument('--chexpert', '-d', dest='chexpert_path', help='Path to CheXpert data.', default='./')
+    parser.add_argument('--data', '-d', dest='data_path', help='Path to data.', default='./')
     #whether to assert GPU usage (disable for testing without GPU)
     parser.add_argument('--no_gpu', dest='no_gpu', help='Don\'t verify GPU usage.', action='store_true')
     parser.add_argument('--val', dest='use_val', help='Whether to use validation data. Test data is used by default.', action='store_true')
@@ -92,7 +92,7 @@ def main():
     fraction = cfg['fraction']
     com_rounds = cfg['com_rounds']
 
-    data_path = check_path(args.chexpert_path, warn_exists=False, require_exists=True)
+    data_path = check_path(args.data_path, warn_exists=False, require_exists=True)
 
     #define mean and std dependent on whether using a pretrained model
     if nnIsTrained:
@@ -123,7 +123,7 @@ def main():
         cur_client = clients[i]
         print(f"Initializing {cur_client.name}")
 
-        path_to_client = check_path(data_path + 'CheXpert-v1.0-small/' + client_dirs[i], warn_exists=False, require_exists=True)
+        path_to_client = check_path(data_path + client_dirs[i], warn_exists=False, require_exists=True)
 
         cur_client.train_file = path_to_client + 'client_train.csv'
         cur_client.val_file = path_to_client + 'client_val.csv'
@@ -199,7 +199,7 @@ def main():
     save_clients.append('avg')
 
     # save AUC in CSV
-    print(f'Saving in {output_path+CSV_OUTPUT_NAME}') 
+    print(f'Saving in {output_path+CSV_OUTPUT_NAME}')
     all_metrics = [save_clients, aurocMean_global_clients]
     with open(output_path+CSV_OUTPUT_NAME, 'w') as f:
         header = ['client', 'AUC']
