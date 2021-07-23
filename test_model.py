@@ -180,8 +180,8 @@ def main():
         for cl in clients:
             LABEL, PRED, cl_aurocMean = Trainer.test(model, cl.val_loader, class_idx, use_gpu, checkpoint=checkpoint)
             aurocMean_global_clients.append(cl_aurocMean)
-          #  print(LABEL)
-          #  print(PRED)
+            print(LABEL)
+            print(PRED)
     else:
         for cl in clients:
             LABEL, PRED, cl_aurocMean = Trainer.test(model, cl.test_loader, class_idx, use_gpu, checkpoint=checkpoint)
@@ -195,13 +195,13 @@ def main():
     save_clients.append('avg')
 
     # save AUC in CSV
-    print(f'Saving in {output_path+CSV_OUTPUT_NAME}')
-    all_metrics = [save_clients, aurocMean_global_clients]
-    with open(output_path+CSV_OUTPUT_NAME, 'w') as f:
-        header = ['client', 'AUC']
-        writer = csv.writer(f)
-        writer.writerow(header)
-        writer.writerows(zip(*all_metrics))
+   # print(f'Saving in {output_path+CSV_OUTPUT_NAME}')
+   # all_metrics = [save_clients, aurocMean_global_clients]
+   # with open(output_path+CSV_OUTPUT_NAME, 'w') as f:
+    #    header = ['client', 'AUC']
+     #   writer = csv.writer(f)
+      #  writer.writerow(header)
+       # writer.writerows(zip(*all_metrics))
 
 
 def check_gpu_usage(use_gpu):

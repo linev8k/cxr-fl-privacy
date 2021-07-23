@@ -14,11 +14,11 @@
   "earl_stop_rounds": 5,
   "reduce_lr_rounds": 3,
 
-  "num_clients": 1,
-  "client_dirs": [ "client5"],
+  "num_clients": 3,
+  "client_dirs": ["client0","client5","client6"],
 
   "batch_size": 8,
   "max_epochs": 1,
-  "com_rounds": 20,
+  "com_rounds": 1,
   "fraction": 1
 }

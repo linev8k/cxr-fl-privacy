@@ -161,6 +161,7 @@ def main():
     else:
         model = DenseNet121(nnClassCount, nnIsTrained)
 
+    print(f"Pretrained:\n {model.state_dict()['densenet121.features.conv0.weight'][0]}")
     #define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)
 
@@ -182,7 +183,7 @@ def main():
             sel_clients = clients
         print("Number of selected clients: ", len(sel_clients))
         print(f"Clients selected: {[sel_cl.name for sel_cl in sel_clients]}")
-
+        print(sel_clients)
         # Step 2: send global model to clients and train locally
         for client_k in sel_clients:
 
@@ -200,15 +201,20 @@ def main():
             # returns local best model
             client_k.model_params = Trainer.train(model, client_k.train_loader, client_k.val_loader,
                                                cfg, client_k.output_path, use_gpu, out_csv=f"round{i}_{client_k.name}.csv")
-
+            print(f"{client_k.name} during training\n{client_k.model_params['densenet121.features.conv0.weight'][0]}")
             train_valid_end = time.time()
             client_time = round(train_valid_end - train_valid_start)
             print(f"<< {client_k.name} Training Time: {client_time} seconds >>")
 
-        trained_clients = [cl for cl in clients if cl.model_params != None]
-        first_cl = trained_clients[0]
+       # trained_clients = [cl for cl in clients if cl.model_params != None]
+        first_cl = sel_clients[0]
+        print(sel_clients)
+       # print(f"{sel_clients[0].name} before server {sel_clients[0].model_params['densenet121.features.conv0.weight'][0]}")
+       # print(f"{sel_clients[1].name} before server {sel_clients[1].model_params['densenet121.features.conv0.weight'][0]}")
         # last_cl = trained_clients[-1]
-        print(f"{[cl.name for cl in trained_clients]}")
+        print(f"{[cl.name for cl in sel_clients]}")
+        for client_k in sel_clients:
+             print(f"{client_k.name} after training\n{client_k.model_params['densenet121.features.conv0.weight'][0]}")
 
         # Step 4: return updates to server
         for key in first_cl.model_params: #iterate through parameters layerwise
@@ -217,14 +223,19 @@ def main():
             for cl in sel_clients:
                 weights.append(cl.model_params[key]*len(cl.train_data))
                 weightn.append(len(cl.train_data))
+        
             #store parameters with first client for convenience
             first_cl.model_params[key] = sum(weights) / sum(weightn) # weighted averaging model weights
-
+        print(weights[0][-1])
+        print(weights[1][-1])
+       # print(trained_clients[1].model_params['densenet121.features.conv0.weight'][0])
+       # print(first_cl.model_params['densenet121.features.conv0.weight'][0])
         if use_gpu:
             model = DenseNet121(nnClassCount).cuda()
             # model = torch.nn.DataParallel(model).cuda()
         # Step 5: server updates global state
         model.load_state_dict(first_cl.model_params)
+       # print(model.state_dict()['densenet121.features.conv0.weight'][0])
         # also save intermediate models
         torch.save(model.state_dict(),
                    output_path + f"global_{i}rounds.pth.tar")

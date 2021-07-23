@@ -1,1 +1,1 @@
-python test_model.py config.json -d /hpi/fs00/share/fg-arnrich/datasets/xray_FL/ -o /scratch/joceline.ziegler/fl_baseline_mendeley/ -m /scratch/joceline.ziegler/fl_baseline_mendeley/global_6rounds.pth.tar --val
+python test_model.py config.json -d /hpi/fs00/share/fg-arnrich/datasets/xray_FL/ -o /scratch/joceline.ziegler/fl_baseline_mendeley/ -m /scratch/joceline.ziegler/fl_baseline_mendeley/round7_client1/1-epoch_FL.pth.tar --val
