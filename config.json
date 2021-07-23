@@ -14,8 +14,8 @@
   "earl_stop_rounds": 5,
   "reduce_lr_rounds": 3,
 
-  "num_clients": 6,
-  "client_dirs": ["client0", "client1", "client2", "client3", "client4", "client5"],
+  "num_clients": 1,
+  "client_dirs": [ "client5"],
 
   "batch_size": 8,
   "max_epochs": 1,

@@ -160,7 +160,6 @@ def main():
     # create model
     if use_gpu:
         model = DenseNet121(nnClassCount, pre_trained=False).cuda()
-        model=torch.nn.DataParallel(model).cuda()
     else:
         model = DenseNet121(nnClassCount, pre_trained=False)
 
@@ -169,11 +168,6 @@ def main():
 
     # read model checkpoint
     checkpoint = args.model_path
-    modelCheckpoint = torch.load(checkpoint)
-    if 'state_dict' in modelCheckpoint:
-        model.load_state_dict(modelCheckpoint['state_dict'])
-    else:
-        model.load_state_dict(modelCheckpoint, strict=False)
 
     #validate global model on client validation data
     print("Validating model on each client's data...")
@@ -184,13 +178,13 @@ def main():
     if args.use_val:
         print('Using validation data')
         for cl in clients:
-            LABEL, PRED, cl_aurocMean = Trainer.test(model, cl.val_loader, class_idx, use_gpu, checkpoint=None)
+            LABEL, PRED, cl_aurocMean = Trainer.test(model, cl.val_loader, class_idx, use_gpu, checkpoint=checkpoint)
             aurocMean_global_clients.append(cl_aurocMean)
-            print(LABEL)
-            print(PRED)
+          #  print(LABEL)
+          #  print(PRED)
     else:
         for cl in clients:
-            _, _, cl_aurocMean = Trainer.test(model, cl.test_loader, class_idx, use_gpu, checkpoint=None)
+            LABEL, PRED, cl_aurocMean = Trainer.test(model, cl.test_loader, class_idx, use_gpu, checkpoint=checkpoint)
             aurocMean_global_clients.append(cl_aurocMean)
 
     # mean of client AUCs
