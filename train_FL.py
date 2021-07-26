@@ -3,7 +3,7 @@
 
 #set which GPUs to use
 import os
-selected_gpus = [4] #configure this
+selected_gpus = [7] #configure this
 os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(gpu) for gpu in selected_gpus])
 
 import pandas as pd
@@ -140,28 +140,28 @@ def main():
                                             num_workers=4, pin_memory=True)
         # assert cur_client.train_loader.dataset == cur_client.train_data
 
-        cur_client.val_loader = DataLoader(dataset=cur_client.val_data, batch_size=trBatchSize, shuffle=True,
+        cur_client.val_loader = DataLoader(dataset=cur_client.val_data, batch_size=trBatchSize, shuffle=False,
                                             num_workers=4, pin_memory=True)
         cur_client.test_loader = DataLoader(dataset = cur_client.test_data, num_workers = 4, pin_memory = True)
+    
 
     # show images for testing
-    # for batch in clients[0].train_loader:
+   #  for batch in clients[1].train_loader:
     #     transforms.ToPILImage()(batch[0][0]).show()
-    #     print(batch[1][0])
+     #    print(batch[1])
     #
-    # for batch in clients[0].val_loader:
+    #  for batch in clients[1].val_loader:
     #     transforms.ToPILImage()(batch[0][0]).show()
-    #     print(batch[1][0])
+     #     print(batch[1][0])
 
 
     #create model
     if use_gpu:
-        model = DenseNet121(nnClassCount, nnIsTrained).cuda()
+        global_model = DenseNet121(nnClassCount, nnIsTrained).cuda()
         # model=torch.nn.DataParallel(model).cuda()
     else:
-        model = DenseNet121(nnClassCount, nnIsTrained)
+        global_model = DenseNet121(nnClassCount, nnIsTrained)
 
-    print(f"Pretrained:\n {model.state_dict()['densenet121.features.conv0.weight'][0]}")
     #define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)
 
@@ -190,6 +190,13 @@ def main():
             # reset model at client's site
             client_k.model_params = None
 
+            # create independent copy of initial model with respective parameters
+            if use_gpu:
+                local_model = DenseNet121(nnClassCount, pre_trained=False).cuda()
+            else:
+                local_model = DenseNet121(nnClassCount, pre_trained=False)
+            local_model.load_state_dict(global_model.state_dict())
+
             print(f"<< {client_k.name} Training Start >>")
             # set output path for storing models and results
             client_k.output_path = output_path + f"round{i}_{client_k.name}/"
@@ -199,23 +206,13 @@ def main():
             train_valid_start = time.time()
             # Step 3: Perform local computations
             # returns local best model
-            client_k.model_params = Trainer.train(model, client_k.train_loader, client_k.val_loader,
+            client_k.model_params = Trainer.train(local_model, client_k.train_loader, client_k.val_loader,
                                                cfg, client_k.output_path, use_gpu, out_csv=f"round{i}_{client_k.name}.csv")
-            print(f"{client_k.name} during training\n{client_k.model_params['densenet121.features.conv0.weight'][0]}")
             train_valid_end = time.time()
             client_time = round(train_valid_end - train_valid_start)
             print(f"<< {client_k.name} Training Time: {client_time} seconds >>")
-
-       # trained_clients = [cl for cl in clients if cl.model_params != None]
+        
         first_cl = sel_clients[0]
-        print(sel_clients)
-       # print(f"{sel_clients[0].name} before server {sel_clients[0].model_params['densenet121.features.conv0.weight'][0]}")
-       # print(f"{sel_clients[1].name} before server {sel_clients[1].model_params['densenet121.features.conv0.weight'][0]}")
-        # last_cl = trained_clients[-1]
-        print(f"{[cl.name for cl in sel_clients]}")
-        for client_k in sel_clients:
-             print(f"{client_k.name} after training\n{client_k.model_params['densenet121.features.conv0.weight'][0]}")
-
         # Step 4: return updates to server
         for key in first_cl.model_params: #iterate through parameters layerwise
             weights, weightn = [], []
@@ -226,26 +223,25 @@ def main():
         
             #store parameters with first client for convenience
             first_cl.model_params[key] = sum(weights) / sum(weightn) # weighted averaging model weights
-        print(weights[0][-1])
-        print(weights[1][-1])
-       # print(trained_clients[1].model_params['densenet121.features.conv0.weight'][0])
-       # print(first_cl.model_params['densenet121.features.conv0.weight'][0])
+    
         if use_gpu:
-            model = DenseNet121(nnClassCount).cuda()
-            # model = torch.nn.DataParallel(model).cuda()
+           global_model = DenseNet121(nnClassCount).cuda()
+           # model = torch.nn.DataParallel(model).cuda()
         # Step 5: server updates global state
-        model.load_state_dict(first_cl.model_params)
-       # print(model.state_dict()['densenet121.features.conv0.weight'][0])
-        # also save intermediate models
-        torch.save(model.state_dict(),
-                   output_path + f"global_{i}rounds.pth.tar")
+        global_model.load_state_dict(first_cl.model_params)
 
-        #validate global model on client validation data
+        # also save intermediate models
+        torch.save(global_model.state_dict(),
+                   output_path + f"global_{i}rounds.pth.tar")
+       
+       #validate global model on client validation data
         print("Validating global model...")
         aurocMean_global = []
         for cl in clients:
-            _, _, cl_aurocMean = Trainer.test(model, cl.val_loader, class_idx, use_gpu, checkpoint=None)
+            GT, PRED, cl_aurocMean = Trainer.test(global_model, cl.val_loader, class_idx, use_gpu, checkpoint=None)
             aurocMean_global.append(cl_aurocMean)
+           #  print(GT)
+           # print(PRED)
         cur_global_auc = np.array(aurocMean_global).mean()
         print("AUC Mean: {:.3f}".format(cur_global_auc))
         global_auc.append(cur_global_auc)

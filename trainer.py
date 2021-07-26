@@ -176,7 +176,7 @@ class Trainer():
 
 
     def test(model, dataLoaderTest, class_idx, use_gpu, checkpoint=None):
-
+        model.eval()
         nnClassCount = len(class_idx)
         class_names = dataLoaderTest.dataset.class_names
 
@@ -195,7 +195,6 @@ class Trainer():
                 model.load_state_dict(modelCheckpoint)
 
 
-        model.eval()
         with torch.no_grad():
             for i, (varInput, target) in enumerate(dataLoaderTest):
 
