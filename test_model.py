@@ -3,7 +3,7 @@
 
 #set which GPUs to use
 import os
-selected_gpus = [4] #configure this
+selected_gpus = [7] #configure this
 os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(gpu) for gpu in selected_gpus])
 
 import pandas as pd
@@ -24,7 +24,7 @@ from chexpert_data import CheXpertDataSet
 from trainer import Trainer, DenseNet121, Client
 from utils import check_path
 
-CSV_OUTPUT_NAME = 'test_model_client5.csv' # name for file in which to store results
+CSV_OUTPUT_NAME = 'client4_round17_client5.csv' # name for file in which to store results
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]  # mean of ImageNet dataset(for normalization)
 IMAGENET_STD = [0.229, 0.224, 0.225]   # std of ImageNet dataset(for normalization)
@@ -143,7 +143,7 @@ def main():
                                             num_workers=4, pin_memory=True)
         # assert cur_client.train_loader.dataset == cur_client.train_data
 
-        cur_client.val_loader = DataLoader(dataset=cur_client.val_data, batch_size=trBatchSize, shuffle=True,
+        cur_client.val_loader = DataLoader(dataset=cur_client.val_data, batch_size=trBatchSize, shuffle=False,
                                             num_workers=4, pin_memory=True)
         cur_client.test_loader = DataLoader(dataset = cur_client.test_data, num_workers = 4, pin_memory = True)
 
@@ -195,13 +195,13 @@ def main():
     save_clients.append('avg')
 
     # save AUC in CSV
-   # print(f'Saving in {output_path+CSV_OUTPUT_NAME}')
-   # all_metrics = [save_clients, aurocMean_global_clients]
-   # with open(output_path+CSV_OUTPUT_NAME, 'w') as f:
-    #    header = ['client', 'AUC']
-     #   writer = csv.writer(f)
-      #  writer.writerow(header)
-       # writer.writerows(zip(*all_metrics))
+    print(f'Saving in {output_path+CSV_OUTPUT_NAME}')
+    all_metrics = [save_clients, aurocMean_global_clients]
+    with open(output_path+CSV_OUTPUT_NAME, 'w') as f:
+        header = ['client', 'AUC']
+        writer = csv.writer(f)
+        writer.writerow(header)
+        writer.writerows(zip(*all_metrics))
 
 
 def check_gpu_usage(use_gpu):
