@@ -3,7 +3,7 @@
 
 #set which GPUs to use
 import os
-selected_gpus = [7] #configure this
+selected_gpus = [2] #configure this
 os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(gpu) for gpu in selected_gpus])
 
 import pandas as pd
@@ -44,6 +44,8 @@ def main():
     parser.add_argument('--no_gpu', dest='no_gpu', help='Don\'t verify GPU usage.', action='store_true')
     #set path to data (Chexpert and Mendeley)
     parser.add_argument('--data', '-d', dest='data_path', help='Path to data.', default='./')
+    #specify path to client files for data reading
+    parser.add_argument('--data_files', '-df', dest='data_files', help='Path to data files.', default='./')
 
     args = parser.parse_args()
     with open(args.cfg_path) as f:
@@ -90,6 +92,7 @@ def main():
     reduce_lr_rounds = cfg['reduce_lr_rounds']
 
     data_path = check_path(args.data_path, warn_exists=False, require_exists=True)
+    data_files = check_path(args.data_files, warn_exists=False, require_exists=True)
 
     #define mean and std dependent on whether using a pretrained model
     if nnIsTrained:
@@ -120,7 +123,8 @@ def main():
         cur_client = clients[i]
         print(f"Initializing {cur_client.name}")
 
-        path_to_client = check_path(data_path + client_dirs[i], warn_exists=False, require_exists=True)
+        path_to_client = check_path(data_files + client_dirs[i], warn_exists=False, require_exists=True)
+        print(path_to_client)
 
         cur_client.train_file = path_to_client + 'client_train.csv'
         cur_client.val_file = path_to_client + 'client_val.csv'
@@ -143,7 +147,7 @@ def main():
         cur_client.val_loader = DataLoader(dataset=cur_client.val_data, batch_size=trBatchSize, shuffle=False,
                                             num_workers=4, pin_memory=True)
         cur_client.test_loader = DataLoader(dataset = cur_client.test_data, num_workers = 4, pin_memory = True)
-    
+
 
     # show images for testing
    #  for batch in clients[1].train_loader:
@@ -211,7 +215,7 @@ def main():
             train_valid_end = time.time()
             client_time = round(train_valid_end - train_valid_start)
             print(f"<< {client_k.name} Training Time: {client_time} seconds >>")
-        
+
         first_cl = sel_clients[0]
         # Step 4: return updates to server
         for key in first_cl.model_params: #iterate through parameters layerwise
@@ -220,10 +224,10 @@ def main():
             for cl in sel_clients:
                 weights.append(cl.model_params[key]*len(cl.train_data))
                 weightn.append(len(cl.train_data))
-        
+
             #store parameters with first client for convenience
             first_cl.model_params[key] = sum(weights) / sum(weightn) # weighted averaging model weights
-    
+
         if use_gpu:
            global_model = DenseNet121(nnClassCount).cuda()
            # model = torch.nn.DataParallel(model).cuda()
@@ -233,7 +237,7 @@ def main():
         # also save intermediate models
         torch.save(global_model.state_dict(),
                    output_path + f"global_{i}rounds.pth.tar")
-       
+
        #validate global model on client validation data
         print("Validating global model...")
         aurocMean_global = []
