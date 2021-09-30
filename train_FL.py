@@ -3,7 +3,7 @@
 
 #set which GPUs to use
 import os
-selected_gpus = [2] #configure this
+selected_gpus = [0] #configure this
 os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(gpu) for gpu in selected_gpus])
 
 import pandas as pd
@@ -170,11 +170,13 @@ def main():
 
     #create model
     if use_gpu:
-        global_model = DenseNet121(nnClassCount, nnIsTrained).cuda()
+        global_model = DenseNet121(nnClassCount, colour_input, nnIsTrained).cuda()
         # model=torch.nn.DataParallel(model).cuda()
     else:
-        global_model = DenseNet121(nnClassCount, nnIsTrained)
+        global_model = DenseNet121(nnClassCount, colour_input, nnIsTrained)
 
+
+    print(global_model)
     #define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)
 
@@ -205,9 +207,9 @@ def main():
 
             # create independent copy of initial model with respective parameters
             if use_gpu:
-                local_model = DenseNet121(nnClassCount, pre_trained=False).cuda()
+                local_model = DenseNet121(nnClassCount, colour_input, pre_trained=False).cuda()
             else:
-                local_model = DenseNet121(nnClassCount, pre_trained=False)
+                local_model = DenseNet121(nnClassCount, colour_input, pre_trained=False)
             local_model.load_state_dict(global_model.state_dict())
 
             print(f"<< {client_k.name} Training Start >>")
@@ -238,7 +240,7 @@ def main():
             first_cl.model_params[key] = sum(weights) / sum(weightn) # weighted averaging model weights
 
         if use_gpu:
-           global_model = DenseNet121(nnClassCount).cuda()
+           global_model = DenseNet121(nnClassCount, colour_input).cuda()
            # model = torch.nn.DataParallel(model).cuda()
         # Step 5: server updates global state
         global_model.load_state_dict(first_cl.model_params)

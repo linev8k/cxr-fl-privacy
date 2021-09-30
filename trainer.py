@@ -222,7 +222,7 @@ class DenseNet121(nn.Module):
     The architecture of our model is the same as standard DenseNet121
     except the classifier layer which has an additional sigmoid function.
     """
-    def __init__(self, out_size, pre_trained=False):
+    def __init__(self, out_size, colour_input='RGB', pre_trained=False):
         super(DenseNet121, self).__init__()
         self.densenet121 = torchvision.models.densenet121(pretrained = pre_trained)
         num_ftrs = self.densenet121.classifier.in_features
@@ -231,9 +231,23 @@ class DenseNet121(nn.Module):
             nn.Sigmoid()
         )
 
+        if colour_input == 'L':
+            self.rgb_to_grey_input()
+
     def forward(self, x):
         x = self.densenet121(x)
         return x
+
+    def rgb_to_grey_input(self):
+
+        """Replace the first convolutional layer that takes a 3-dimensional (RGB) input
+        with a 1-dimensional layer, adding the weights of each existing dimension
+        in order to retain pretrained parameters"""
+
+        conv0_weight = self.densenet121.features.conv0.weight.clone()
+        self.densenet121.features.conv0 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        with torch.no_grad():
+            self.densenet121.features.conv0.weight = nn.Parameter(conv0_weight.sum(dim=1,keepdim=True)) # way to keep pretrained weights
 
 
 class Client():

@@ -2,7 +2,7 @@
   "front_lat": "frontal",
   "class_idx": [0],
   "policy": "zeros",
-  "input": "RGB",
+  "input": "L",
 
   "imgtransResize": 224,
   "random_seed": 206,
