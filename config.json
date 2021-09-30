@@ -5,9 +5,11 @@
   "input": "L",
 
   "imgtransResize": 224,
+  "augment": false,
   "random_seed": 206,
 
   "pre_trained": true,
+  "optim": "SGD",
   "lr": 0.01,
   "betas": [0.9, 0.999],
   "eps": 1e-08,

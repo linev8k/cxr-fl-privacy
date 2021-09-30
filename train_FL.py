@@ -78,6 +78,7 @@ def main():
     # imgtransCrop = cfg['imgtransCrop']
     policy = cfg['policy']
     colour_input = cfg['input']
+    augment = cfg['augment']
 
     class_idx = cfg['class_idx'] #indices of classes used for classification
     nnClassCount = len(class_idx)       # dimension of the output
@@ -108,23 +109,25 @@ def main():
 
     # define transforms
     # if using augmentation, use different transforms for training, test & val data
-    # train_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
-    #                                         # transforms.RandomResizedCrop(imgtransResize),
-    #                                         transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
-    #                                         transforms.RandomHorizontalFlip(),
-    #                                         transforms.ToTensor(),
-    #                                         transforms.Normalize(data_mean, data_std)
-    #                                         ])
-    #no augmentation for comparison with DP
-    train_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
-                                            transforms.ToTensor(),
-                                            transforms.Normalize(data_mean, data_std)
-                                            ])
+    if augment:
+        train_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
+                                                # transforms.RandomResizedCrop(imgtransResize),
+                                                transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
+                                                transforms.RandomHorizontalFlip(),
+                                                transforms.ToTensor(),
+                                                transforms.Normalize(data_mean, data_std)
+                                                ])
+    else:
+        #no augmentation for comparison with DP
+        train_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
+                                                transforms.ToTensor(),
+                                                transforms.Normalize(data_mean, data_std)
+                                                ])
+
     test_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(data_mean, data_std)
                                             ])
-
 
     #initialize client instances
     clients = [Client(name=f'client{n}') for n in range(num_clients)]
