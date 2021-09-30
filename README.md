@@ -51,7 +51,7 @@ python3 train_FL.py config.json -o path_to_results/
 ```
 Specify the path where data lives:
 ```sh
-python3 train_FL.py config.json -d path_to_data/
+python3 train_FL.py config.json -d path_to_data/ -df path_to_datafile/
 ```
 For convenience, a shell script can be used (make sure all arguments are specified properly): 
 ```sh
