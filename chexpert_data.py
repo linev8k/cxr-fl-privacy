@@ -12,9 +12,9 @@ from torch.utils.data import Dataset
 
 
 class CheXpertDataSet(Dataset):
-    def __init__(self, data_path, data_file, class_idx, policy, transform = None):
+    def __init__(self, data_path, data_file, class_idx, policy, input, transform = None):
         """
-        data_path: path to where the data lives. 
+        data_path: path to where the data lives.
         data_file: path to the file containing image paths with corresponding labels.
         class_idx: Indices of findings/classes to be included.
         policy: name the policy with regard to the uncertainty labels.
@@ -58,13 +58,14 @@ class CheXpertDataSet(Dataset):
         self.class_names = ['No Finding', 'Enlarged Cardiomediastinum', 'Cardiomegaly', 'Lung Opacity',
                    'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis', 'Pneumothorax',
                    'Pleural Effusion', 'Pleural Other', 'Fracture', 'Support Devices']
+        self.input = input
         self.transform = transform
 
     def __getitem__(self, index):
         '''Take the index of item and return the image and its labels'''
 
         image_name = self.image_names[index]
-        image = Image.open(image_name).convert('RGB')
+        image = Image.open(image_name).convert(input) # RGB or L for greyscale
         label = self.labels[index]
         if self.transform is not None:
             image = self.transform(image)

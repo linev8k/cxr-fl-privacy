@@ -77,6 +77,7 @@ def main():
     imgtransResize = cfg['imgtransResize']
     # imgtransCrop = cfg['imgtransCrop']
     policy = cfg['policy']
+    input = cfg['input']
 
     class_idx = cfg['class_idx'] #indices of classes used for classification
     nnClassCount = len(class_idx)       # dimension of the output
@@ -104,10 +105,15 @@ def main():
 
     # define transforms
     # if using augmentation, use different transforms for training, test & val data
+    # train_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
+    #                                         # transforms.RandomResizedCrop(imgtransResize),
+    #                                         transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
+    #                                         transforms.RandomHorizontalFlip(),
+    #                                         transforms.ToTensor(),
+    #                                         transforms.Normalize(data_mean, data_std)
+    #                                         ])
+    #no augmentation for comparison with DP
     train_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
-                                            # transforms.RandomResizedCrop(imgtransResize),
-                                            transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
-                                            transforms.RandomHorizontalFlip(),
                                             transforms.ToTensor(),
                                             transforms.Normalize(data_mean, data_std)
                                             ])
@@ -130,11 +136,11 @@ def main():
         cur_client.val_file = path_to_client + 'client_val.csv'
         cur_client.test_file = path_to_client + 'client_test.csv'
 
-        cur_client.train_data = CheXpertDataSet(data_path, cur_client.train_file, class_idx, policy, transform = train_transformSequence)
-        cur_client.val_data = CheXpertDataSet(data_path, cur_client.val_file, class_idx, policy, transform = test_transformSequence)
-        cur_client.test_data = CheXpertDataSet(data_path, cur_client.test_file, class_idx, policy, transform = test_transformSequence)
+        cur_client.train_data = CheXpertDataSet(data_path, cur_client.train_file, class_idx, policy, input=input, transform = train_transformSequence)
+        cur_client.val_data = CheXpertDataSet(data_path, cur_client.val_file, class_idx, policy, input=input, transform = test_transformSequence)
+        cur_client.test_data = CheXpertDataSet(data_path, cur_client.test_file, class_idx, policy, input=input, transform = test_transformSequence)
 
-        assert cur_client.train_data[0][0].shape == torch.Size([3,imgtransResize,imgtransResize])
+        assert cur_client.train_data[0][0].shape == torch.Size([len(input),imgtransResize,imgtransResize])
         assert cur_client.train_data[0][1].shape == torch.Size([nnClassCount])
 
         cur_client.n_data = cur_client.get_data_len()

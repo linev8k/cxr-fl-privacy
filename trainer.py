@@ -32,8 +32,9 @@ class Trainer():
         """
         out_csv_path = output_path + out_csv
 
-        optimizer = optim.Adam(model.parameters(), lr = cfg['lr'], # setting optimizer & scheduler
-                               betas = tuple(cfg['betas']), eps = cfg['eps'], weight_decay = cfg['weight_decay'])
+        # optimizer = optim.Adam(model.parameters(), lr = cfg['lr'], # setting optimizer & scheduler
+                               # betas = tuple(cfg['betas']), eps = cfg['eps'], weight_decay = cfg['weight_decay'])
+        optimizer = optim.SGD(model.parameters(), lr=cfg['lr'])
         loss = torch.nn.BCELoss() # setting binary cross entropy as loss function
 
         if checkpoint != None: # loading checkpoint
