@@ -77,7 +77,7 @@ def main():
     imgtransResize = cfg['imgtransResize']
     # imgtransCrop = cfg['imgtransCrop']
     policy = cfg['policy']
-    input = cfg['input']
+    colour_input = cfg['input']
 
     class_idx = cfg['class_idx'] #indices of classes used for classification
     nnClassCount = len(class_idx)       # dimension of the output
@@ -136,11 +136,11 @@ def main():
         cur_client.val_file = path_to_client + 'client_val.csv'
         cur_client.test_file = path_to_client + 'client_test.csv'
 
-        cur_client.train_data = CheXpertDataSet(data_path, cur_client.train_file, class_idx, policy, input=input, transform = train_transformSequence)
-        cur_client.val_data = CheXpertDataSet(data_path, cur_client.val_file, class_idx, policy, input=input, transform = test_transformSequence)
-        cur_client.test_data = CheXpertDataSet(data_path, cur_client.test_file, class_idx, policy, input=input, transform = test_transformSequence)
+        cur_client.train_data = CheXpertDataSet(data_path, cur_client.train_file, class_idx, policy, colour_input=colour_input, transform = train_transformSequence)
+        cur_client.val_data = CheXpertDataSet(data_path, cur_client.val_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
+        cur_client.test_data = CheXpertDataSet(data_path, cur_client.test_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
 
-        assert cur_client.train_data[0][0].shape == torch.Size([len(input),imgtransResize,imgtransResize])
+        assert cur_client.train_data[0][0].shape == torch.Size([len(colour_input),imgtransResize,imgtransResize])
         assert cur_client.train_data[0][1].shape == torch.Size([nnClassCount])
 
         cur_client.n_data = cur_client.get_data_len()

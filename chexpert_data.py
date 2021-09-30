@@ -12,7 +12,7 @@ from torch.utils.data import Dataset
 
 
 class CheXpertDataSet(Dataset):
-    def __init__(self, data_path, data_file, class_idx, policy, input, transform = None):
+    def __init__(self, data_path, data_file, class_idx, policy, colour_input, transform = None):
         """
         data_path: path to where the data lives.
         data_file: path to the file containing image paths with corresponding labels.
@@ -58,14 +58,14 @@ class CheXpertDataSet(Dataset):
         self.class_names = ['No Finding', 'Enlarged Cardiomediastinum', 'Cardiomegaly', 'Lung Opacity',
                    'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis', 'Pneumothorax',
                    'Pleural Effusion', 'Pleural Other', 'Fracture', 'Support Devices']
-        self.input = input
+        self.colour_input = colour_input
         self.transform = transform
 
     def __getitem__(self, index):
         '''Take the index of item and return the image and its labels'''
 
         image_name = self.image_names[index]
-        image = Image.open(image_name).convert(input) # RGB or L for greyscale
+        image = Image.open(image_name).convert(colour_input) # RGB or L for greyscale
         label = self.labels[index]
         if self.transform is not None:
             image = self.transform(image)
