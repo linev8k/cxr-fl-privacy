@@ -102,6 +102,9 @@ def main():
     else:
         data_mean = CHEXPERT_MEAN
         data_std = CHEXPERT_STD
+    if colour_input == 'L':
+        data_mean = np.mean(data_mean)
+        data_std = np.mean(data_std)
 
     # define transforms
     # if using augmentation, use different transforms for training, test & val data
