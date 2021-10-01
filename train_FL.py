@@ -1,4 +1,4 @@
-
+net
 """Train a model using federated learning"""
 
 #set which GPUs to use
@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 
 #local imports
 from chexpert_data import CheXpertDataSet
-from trainer import Trainer, DenseNet121, Client
+from trainer import Trainer, DenseNet121, ResNet50, Client
 from utils import check_path, merge_eval_csv
 
 
@@ -72,6 +72,11 @@ def main():
     nnIsTrained = cfg['pre_trained']     # pre-trained using ImageNet
     trBatchSize = cfg['batch_size']
     trMaxEpoch = cfg['max_epochs']
+
+    if cfg['net'] == 'DenseNet121':
+        net = DenseNet121
+    elif cfg['net'] == 'ResNet50':
+        net = ResNet50
 
     # Parameters related to image transforms: size of the down-scaled image, cropped image
     imgtransResize = cfg['imgtransResize']
@@ -173,10 +178,10 @@ def main():
 
     #create model
     if use_gpu:
-        global_model = DenseNet121(nnClassCount, colour_input, nnIsTrained).cuda()
+        global_model = net(nnClassCount, colour_input, nnIsTrained).cuda()
         # model=torch.nn.DataParallel(model).cuda()
     else:
-        global_model = DenseNet121(nnClassCount, colour_input, nnIsTrained)
+        global_model = net(nnClassCount, colour_input, nnIsTrained)
 
 
     print(global_model)
@@ -210,9 +215,9 @@ def main():
 
             # create independent copy of initial model with respective parameters
             if use_gpu:
-                local_model = DenseNet121(nnClassCount, colour_input, pre_trained=False).cuda()
+                local_model = net(nnClassCount, colour_input, pre_trained=False).cuda()
             else:
-                local_model = DenseNet121(nnClassCount, colour_input, pre_trained=False)
+                local_model = net(nnClassCount, colour_input, pre_trained=False)
             local_model.load_state_dict(global_model.state_dict())
 
             print(f"<< {client_k.name} Training Start >>")
@@ -243,7 +248,7 @@ def main():
             first_cl.model_params[key] = sum(weights) / sum(weightn) # weighted averaging model weights
 
         if use_gpu:
-           global_model = DenseNet121(nnClassCount, colour_input).cuda()
+           global_model = net(nnClassCount, colour_input).cuda()
            # model = torch.nn.DataParallel(model).cuda()
         # Step 5: server updates global state
         global_model.load_state_dict(first_cl.model_params)

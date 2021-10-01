@@ -4,6 +4,7 @@
   "policy": "zeros",
   "input": "L",
 
+  "net": "DenseNet121",
   "imgtransResize": 224,
   "augment": false,
   "random_seed": 206,
