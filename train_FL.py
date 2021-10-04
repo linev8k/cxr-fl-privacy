@@ -1,4 +1,3 @@
-net
 """Train a model using federated learning"""
 
 #set which GPUs to use
@@ -144,8 +143,10 @@ def main():
         print(path_to_client)
 
         cur_client.train_file = path_to_client + 'client_train.csv'
-        cur_client.val_file = path_to_client + 'client_val.csv'
-        cur_client.test_file = path_to_client + 'client_test.csv'
+        # cur_client.val_file = path_to_client + 'client_val.csv'
+        # cur_client.test_file = path_to_client + 'client_test.csv'
+        cur_client.test_file = path_to_client + 'client_train.csv'
+        cur_client.val_file = path_to_client + 'client_train.csv'
 
         cur_client.train_data = CheXpertDataSet(data_path, cur_client.train_file, class_idx, policy, colour_input=colour_input, transform = train_transformSequence)
         cur_client.val_data = CheXpertDataSet(data_path, cur_client.val_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
@@ -165,7 +166,6 @@ def main():
                                             num_workers=4, pin_memory=True)
         cur_client.test_loader = DataLoader(dataset = cur_client.test_data, num_workers = 4, pin_memory = True)
 
-
     # show images for testing
    #  for batch in clients[1].train_loader:
     #     transforms.ToPILImage()(batch[0][0]).show()
@@ -183,8 +183,6 @@ def main():
     else:
         global_model = net(nnClassCount, colour_input, nnIsTrained)
 
-
-    print(global_model)
     #define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)
 
@@ -261,11 +259,14 @@ def main():
         print("Validating global model...")
         aurocMean_global = []
         for cl in clients:
-            GT, PRED, cl_aurocMean = Trainer.test(global_model, cl.val_loader, class_idx, use_gpu, checkpoint=None)
-            aurocMean_global.append(cl_aurocMean)
+            if cl.val_loader is not None:
+                GT, PRED, cl_aurocMean = Trainer.test(global_model, cl.val_loader, class_idx, use_gpu, checkpoint=None)
+                aurocMean_global.append(cl_aurocMean)
+            else:
+                aurocMean_global.append(np.nan)
            #  print(GT)
            # print(PRED)
-        cur_global_auc = np.array(aurocMean_global).mean()
+        cur_global_auc = np.nanmean(np.array(aurocMean_global))
         print("AUC Mean: {:.3f}".format(cur_global_auc))
         global_auc.append(cur_global_auc)
 

@@ -44,6 +44,7 @@ class Trainer():
             modelCheckpoint = torch.load(checkpoint)
             model.load_state_dict(modelCheckpoint['state_dict'])
             optimizer.load_state_dict(modelCheckpoint['optimizer'])
+        params = model.state_dict().copy()
 
         # Train the network
         lossMIN = 100000
@@ -62,9 +63,13 @@ class Trainer():
             train_end.append(time.time()) # training ends
 
             #validation
-            print("Validating model...")
-            lossv, aurocMean = Trainer.epochVal(model, dataLoaderVal, optimizer, loss, use_gpu)
-            print("Training loss: {:.3f},".format(losst), "Valid loss: {:.3f}".format(lossv))
+            if dataLoaderVal is not None:
+                print("Validating model...")
+                lossv, aurocMean = Trainer.epochVal(model, dataLoaderVal, optimizer, loss, use_gpu)
+                print("Training loss: {:.3f},".format(losst), "Valid loss: {:.3f}".format(lossv))
+            else:
+                lossv, aurocMean = (np.nan, np.nan)
+                params = model.state_dict().copy() # store model parameters regardless of validation
 
             #save model to checkpoint
             model_num = epochID + 1
@@ -75,7 +80,7 @@ class Trainer():
             if lossv < lossMIN:
                 lossMIN = lossv
                 print('Epoch ' + str(model_num) + ' [++++] val loss decreased')
-                params = model.state_dict() #store parameters of best model
+                params = model.state_dict().copy() #store parameters of best model
             else:
                 print('Epoch ' + str(model_num) + ' [----] val loss did not decrease')
 
