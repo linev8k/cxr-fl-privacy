@@ -24,16 +24,17 @@ python3 split_chexpert.py config.json -d  path_to_data/
 ```
 Similarly, split other data which does not include multiple images per patient (here, this applies to Mendeley data):  
 ```sh
-python3 split_mendeley.py config.json -d path_to_data/ 
+python3 split_mendeley.py -d path_to_data/ 
 ```
 Adjust this part in the script:
 ```python
 ORIG_CSV = 'train_mendeley.csv' #name of csv to split
-SUB_DIR = 'client5/' #subdirectory within data path in which to save csv files
-CSV_NAMES = ['client_test.csv'] #filenames for saving (at most 2)
+SUB_DIR = 'mendeley_clients/' #subdirectory within data path in which to save csv files
+CSV_NAMES = ['client0.csv', 'client1.csv'] #filenames for saving
 CSV_NAMES = [SUB_DIR + csv_name for csv_name in CSV_NAMES]
-SPLIT_PERC = 0.002 #fraction of original data
-KEEP_REST = False #whether to also save other part of the data
+SPLIT_NUM = [500,200] #fractions or integer numbers for subset of original data
+random_seed = 208
+split_by = 'int' # 'int' or 'perc'; whether number or percentage is specified
 ```
 
 **Train a network using federated learning**   
