@@ -143,10 +143,8 @@ def main():
         print(path_to_client)
 
         cur_client.train_file = path_to_client + 'client_train.csv'
-        # cur_client.val_file = path_to_client + 'client_val.csv'
-        # cur_client.test_file = path_to_client + 'client_test.csv'
-        cur_client.test_file = path_to_client + 'client_train.csv'
-        cur_client.val_file = path_to_client + 'client_train.csv'
+        cur_client.val_file = path_to_client + 'client_val.csv'
+        cur_client.test_file = path_to_client + 'client_test.csv'
 
         cur_client.train_data = CheXpertDataSet(data_path, cur_client.train_file, class_idx, policy, colour_input=colour_input, transform = train_transformSequence)
         cur_client.val_data = CheXpertDataSet(data_path, cur_client.val_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)

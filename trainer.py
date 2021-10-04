@@ -266,7 +266,7 @@ class ResNet50(nn.Module):
 
     def __init__(self, out_size, colour_input = 'RGB', pre_trained=False):
         super(ResNet50, self).__init__()
-        self.resnet50 = models.resnet50(pretrained = pre_trained)
+        self.resnet50 = torchvision.models.resnet50(pretrained = pre_trained)
         num_ftrs = self.resnet50.fc.in_features
         self.resnet50.fc = nn.Sequential(
             nn.Linear(num_ftrs, out_size),
@@ -286,10 +286,10 @@ class ResNet50(nn.Module):
         with a 1-dimensional layer, adding the weights of each existing dimension
         in order to retain pretrained parameters"""
 
-        conv1_weight = self.resnet18.conv1.weight.clone()
-        self.resnet18.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        conv1_weight = self.resnet50.conv1.weight.clone()
+        self.resnet50.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         with torch.no_grad():
-            self.resnet18.conv1.weight = nn.Parameter(conv1_weight.sum(dim=1,keepdim=True)) # way to keep pretrained weights
+            self.resnet50.conv1.weight = nn.Parameter(conv1_weight.sum(dim=1,keepdim=True)) # way to keep pretrained weights
 
 
 class Client():
