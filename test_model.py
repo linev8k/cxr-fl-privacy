@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 
 #local imports
 from chexpert_data import CheXpertDataSet
-from trainer import Trainer, DenseNet121, Client
+from trainer import Trainer, DenseNet121, Resnet50, Client
 from utils import check_path
 
 CSV_OUTPUT_NAME = 'final_densenet.csv' # name for file in which to store results
@@ -226,7 +226,7 @@ def main():
 
     aurocMean_individual_clients = [auc/nnClassCount for auc in aurocMean_individual_clients]
     for i in range(nnClassCount):
-    print(f'Mean for label {class_idx[i]}: {aurocMean_individual_clients[i]}  ')
+        print(f'Mean for label {class_idx[i]}: {aurocMean_individual_clients[i]}  ')
     # mean of client AUCs
     auc_global = np.nanmean(np.array(aurocMean_global_clients))
     print("AUC Mean of all clients: {:.3f}".format(auc_global))
