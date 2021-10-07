@@ -1,6 +1,6 @@
 {
   "front_lat": "frontal",
-  "class_idx": [0],
+  "class_idx": [2,5,6,8,10],
   "policy": "zeros",
   "input": "L",
 
@@ -19,7 +19,7 @@
   "reduce_lr_rounds": 3,
 
   "num_clients": 5,
-  "client_dirs": ["client0","client1", "client2", "client3", "client4"],
+  "client_dirs": ["client0", "client1", "client2", "client3", "client4"],
 
   "batch_size": 8,
   "max_epochs": 1,

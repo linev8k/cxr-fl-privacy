@@ -3,7 +3,7 @@
 
 #set which GPUs to use
 import os
-selected_gpus = [7] #configure this
+selected_gpus = [1] #configure this
 os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(gpu) for gpu in selected_gpus])
 
 import pandas as pd
@@ -24,7 +24,7 @@ from chexpert_data import CheXpertDataSet
 from trainer import Trainer, DenseNet121, Client
 from utils import check_path
 
-CSV_OUTPUT_NAME = 'client4_round17_client5.csv' # name for file in which to store results
+CSV_OUTPUT_NAME = 'final_densenet.csv' # name for file in which to store results
 
 IMAGENET_MEAN = [0.485, 0.456, 0.406]  # mean of ImageNet dataset(for normalization)
 IMAGENET_STD = [0.229, 0.224, 0.225]   # std of ImageNet dataset(for normalization)
@@ -45,6 +45,8 @@ def main():
     parser.add_argument('--output_path', '-o', help = 'Path to save results.', default = 'results/')
     #set path to chexpert data
     parser.add_argument('--data', '-d', dest='data_path', help='Path to data.', default='./')
+    #specify path to client files for data reading
+    parser.add_argument('--data_files', '-df', dest='data_files', help='Path to data files.', default='./')
     #whether to assert GPU usage (disable for testing without GPU)
     parser.add_argument('--no_gpu', dest='no_gpu', help='Don\'t verify GPU usage.', action='store_true')
     parser.add_argument('--val', dest='use_val', help='Whether to use validation data. Test data is used by default.', action='store_true')
@@ -76,10 +78,17 @@ def main():
     trBatchSize = cfg['batch_size']
     trMaxEpoch = cfg['max_epochs']
 
+    if cfg['net'] == 'DenseNet121':
+        net = DenseNet121
+    elif cfg['net'] == 'ResNet50':
+        net = ResNet50
+
     # Parameters related to image transforms: size of the down-scaled image, cropped image
     imgtransResize = cfg['imgtransResize']
     # imgtransCrop = cfg['imgtransCrop']
     policy = cfg['policy']
+    colour_input = cfg['input']
+    augment = cfg['augment']
 
     class_idx = cfg['class_idx'] #indices of classes used for classification
     nnClassCount = len(class_idx)       # dimension of the output
@@ -93,6 +102,7 @@ def main():
     com_rounds = cfg['com_rounds']
 
     data_path = check_path(args.data_path, warn_exists=False, require_exists=True)
+    data_files = check_path(args.data_files, warn_exists=False, require_exists=True)
 
     #define mean and std dependent on whether using a pretrained model
     if nnIsTrained:
@@ -101,16 +111,27 @@ def main():
     else:
         data_mean = CHEXPERT_MEAN
         data_std = CHEXPERT_STD
+    if colour_input == 'L':
+        data_mean = np.mean(data_mean)
+        data_std = np.mean(data_std)
 
     # define transforms
     # if using augmentation, use different transforms for training, test & val data
-    train_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
-                                            # transforms.RandomResizedCrop(imgtransResize),
-                                            transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
-                                            transforms.RandomHorizontalFlip(),
-                                            transforms.ToTensor(),
-                                            transforms.Normalize(data_mean, data_std)
-                                            ])
+    if augment:
+        train_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
+                                                # transforms.RandomResizedCrop(imgtransResize),
+                                                transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
+                                                transforms.RandomHorizontalFlip(),
+                                                transforms.ToTensor(),
+                                                transforms.Normalize(data_mean, data_std)
+                                                ])
+    else:
+        #no augmentation for comparison with DP
+        train_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
+                                                transforms.ToTensor(),
+                                                transforms.Normalize(data_mean, data_std)
+                                                ])
+
     test_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(data_mean, data_std)
@@ -123,7 +144,7 @@ def main():
         cur_client = clients[i]
         print(f"Initializing {cur_client.name}")
 
-        path_to_client = check_path(data_path + client_dirs[i], warn_exists=False, require_exists=True)
+        path_to_client = check_path(data_files + client_dirs[i], warn_exists=False, require_exists=True)
 
         cur_client.train_file = path_to_client + 'client_train.csv'
         cur_client.val_file = path_to_client + 'client_val.csv'
@@ -133,7 +154,7 @@ def main():
         cur_client.val_data = CheXpertDataSet(data_path, cur_client.val_file, class_idx, policy, transform = test_transformSequence)
         cur_client.test_data = CheXpertDataSet(data_path, cur_client.test_file, class_idx, policy, transform = test_transformSequence)
 
-        assert cur_client.train_data[0][0].shape == torch.Size([3,imgtransResize,imgtransResize])
+        assert cur_client.train_data[0][0].shape == torch.Size([len(colour_input),imgtransResize,imgtransResize])
         assert cur_client.train_data[0][1].shape == torch.Size([nnClassCount])
 
         cur_client.n_data = cur_client.get_data_len()
@@ -159,9 +180,9 @@ def main():
 
     # create model
     if use_gpu:
-        model = DenseNet121(nnClassCount, pre_trained=False).cuda()
+        model = net(nnClassCount, colour_input, pre_trained=False).cuda()
     else:
-        model = DenseNet121(nnClassCount, pre_trained=False)
+        model = net(nnClassCount, colour_input, pre_trained=False)
 
     # define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)
@@ -178,30 +199,38 @@ def main():
     if args.use_val:
         print('Using validation data')
         for cl in clients:
-            LABEL, PRED, cl_aurocMean = Trainer.test(model, cl.val_loader, class_idx, use_gpu, checkpoint=checkpoint)
-            aurocMean_global_clients.append(cl_aurocMean)
-            print(LABEL)
-            print(PRED)
+            if cl.val_loader is not None:
+                LABEL, PRED, cl_aurocMean = Trainer.test(model, cl.val_loader, class_idx, use_gpu, checkpoint=checkpoint)
+                aurocMean_global_clients.append(cl_aurocMean)
+                print(LABEL)
+                print(PRED)
+            else:
+                aurocMean_global_clients.append(np.nan)
+                print(f"No validation data available for {cl.name}")
     else:
         for cl in clients:
-            LABEL, PRED, cl_aurocMean = Trainer.test(model, cl.test_loader, class_idx, use_gpu, checkpoint=checkpoint)
-            aurocMean_global_clients.append(cl_aurocMean)
+            if cl.test_loader is not None:
+                LABEL, PRED, cl_aurocMean = Trainer.test(model, cl.test_loader, class_idx, use_gpu, checkpoint=checkpoint)
+                aurocMean_global_clients.append(cl_aurocMean)
+            else:
+                aurocMean_global_clients.append(np.nan)
+                print(f"No test data available for {cl.name}")
 
     # mean of client AUCs
-    auc_global = np.array(aurocMean_global_clients).mean()
+    auc_global = np.nanmean(np.array(aurocMean_global_clients))
     print("AUC Mean of all clients: {:.3f}".format(auc_global))
     aurocMean_global_clients.append(auc_global) # save mean
     save_clients = [cl.name for cl in clients]
     save_clients.append('avg')
 
     # save AUC in CSV
-    print(f'Saving in {output_path+CSV_OUTPUT_NAME}')
-    all_metrics = [save_clients, aurocMean_global_clients]
-    with open(output_path+CSV_OUTPUT_NAME, 'w') as f:
-        header = ['client', 'AUC']
-        writer = csv.writer(f)
-        writer.writerow(header)
-        writer.writerows(zip(*all_metrics))
+    # print(f'Saving in {output_path+CSV_OUTPUT_NAME}')
+    # all_metrics = [save_clients, aurocMean_global_clients]
+    # with open(output_path+CSV_OUTPUT_NAME, 'w') as f:
+    #     header = ['client', 'AUC']
+    #     writer = csv.writer(f)
+    #     writer.writerow(header)
+    #     writer.writerows(zip(*all_metrics))
 
 
 def check_gpu_usage(use_gpu):
