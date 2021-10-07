@@ -258,7 +258,7 @@ def main():
         aurocMean_global = []
         for cl in clients:
             if cl.val_loader is not None:
-                GT, PRED, cl_aurocMean = Trainer.test(global_model, cl.val_loader, class_idx, use_gpu, checkpoint=None)
+                GT, PRED, cl_aurocMean, _ = Trainer.test(global_model, cl.val_loader, class_idx, use_gpu, checkpoint=None)
                 aurocMean_global.append(cl_aurocMean)
             else:
                 aurocMean_global.append(np.nan)

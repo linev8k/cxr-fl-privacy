@@ -150,9 +150,9 @@ def main():
         cur_client.val_file = path_to_client + 'client_val.csv'
         cur_client.test_file = path_to_client + 'client_test.csv'
 
-        cur_client.train_data = CheXpertDataSet(data_path, cur_client.train_file, class_idx, policy, transform = train_transformSequence)
-        cur_client.val_data = CheXpertDataSet(data_path, cur_client.val_file, class_idx, policy, transform = test_transformSequence)
-        cur_client.test_data = CheXpertDataSet(data_path, cur_client.test_file, class_idx, policy, transform = test_transformSequence)
+        cur_client.train_data = CheXpertDataSet(data_path, cur_client.train_file, class_idx, policy, colour_input = colour_input, transform = train_transformSequence)
+        cur_client.val_data = CheXpertDataSet(data_path, cur_client.val_file, class_idx, policy, colour_input = colour_input, transform = test_transformSequence)
+        cur_client.test_data = CheXpertDataSet(data_path, cur_client.test_file, class_idx, policy, colour_input = colour_input, transform = test_transformSequence)
 
         assert cur_client.train_data[0][0].shape == torch.Size([len(colour_input),imgtransResize,imgtransResize])
         assert cur_client.train_data[0][1].shape == torch.Size([nnClassCount])
@@ -194,28 +194,39 @@ def main():
     print("Validating model on each client's data...")
 
     aurocMean_global_clients = [] # list of AUCs of clients
+    aurocMean_individual_clients = [0 for idx in class_idx] # collect summed AUCs for each finding
 
     # check if validation or test data should be used
     if args.use_val:
         print('Using validation data')
         for cl in clients:
+            print(cl.name)
             if cl.val_loader is not None:
-                LABEL, PRED, cl_aurocMean = Trainer.test(model, cl.val_loader, class_idx, use_gpu, checkpoint=checkpoint)
+                LABEL, PRED, cl_aurocMean, aurocIndividual = Trainer.test(model, cl.val_loader, class_idx, use_gpu, checkpoint=checkpoint)
                 aurocMean_global_clients.append(cl_aurocMean)
-                print(LABEL)
-                print(PRED)
+                for i in range(nnClassCount):
+                    aurocMean_individual_clients[i] += aurocIndividual[i]
+                # print(LABEL)
+                # print(PRED)
             else:
                 aurocMean_global_clients.append(np.nan)
                 print(f"No validation data available for {cl.name}")
     else:
         for cl in clients:
+            print(cl.name)
             if cl.test_loader is not None:
-                LABEL, PRED, cl_aurocMean = Trainer.test(model, cl.test_loader, class_idx, use_gpu, checkpoint=checkpoint)
+                LABEL, PRED, cl_aurocMean, aurocIndividual = Trainer.test(model, cl.test_loader, class_idx, use_gpu, checkpoint=checkpoint)
                 aurocMean_global_clients.append(cl_aurocMean)
+                for i in range(nnClassCount):
+                    aurocMean_individual_clients[i] += aurocIndividual[i]
             else:
                 aurocMean_global_clients.append(np.nan)
                 print(f"No test data available for {cl.name}")
 
+
+    aurocMean_individual_clients = [auc/nnClassCount for auc in aurocMean_individual_clients]
+    for i in range(nnClassCount):
+    print(f'Mean for label {class_idx[i]}: {aurocMean_individual_clients[i]}  ')
     # mean of client AUCs
     auc_global = np.nanmean(np.array(aurocMean_global_clients))
     print("AUC Mean of all clients: {:.3f}".format(auc_global))

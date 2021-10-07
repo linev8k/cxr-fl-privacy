@@ -217,12 +217,12 @@ class Trainer():
 
         aurocIndividual = Trainer.computeAUROC(outGT, outPRED)
         aurocMean = np.nanmean(np.array(aurocIndividual))
-        print('AUROC mean: {:.4f}'.format(aurocMean))
+        print('AUROC mean: {:.4f}  '.format(aurocMean))
 
         for i in range(0, len(aurocIndividual)):
-            print(class_names[class_idx[i]], ': {:.4f}'.format(aurocIndividual[i]))
+            print(class_names[class_idx[i]], ': {:.4f}  '.format(aurocIndividual[i]))
 
-        return outGT, outPRED, aurocMean
+        return outGT, outPRED, aurocMean, aurocIndividual
 
 class DenseNet121(nn.Module):
 
