@@ -192,7 +192,10 @@ def main():
 
     if model_checkpoint is not None: # load weights if some model is specified
         checkpoint = torch.load(model_checkpoint)
-        global_model.load_state_dict(checkpoint['state_dict'])
+        if 'state_dict' in checkpoint:
+            global_model.load_state_dict(checkpoint['state_dict'])
+        else:
+            global_model.load_state_dict(checkpoint)
 
     #define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)
