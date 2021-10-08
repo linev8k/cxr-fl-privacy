@@ -45,6 +45,7 @@ def main():
     parser.add_argument('--data', '-d', dest='data_path', help='Path to data.', default='./')
     #specify path to client files for data reading
     parser.add_argument('--data_files', '-df', dest='data_files', help='Path to data files.', default='./')
+    parser.add_argument('--model', '-m', dest='model', help='Model to load weights from.', default=None)
 
     args = parser.parse_args()
     with open(args.cfg_path) as f:
@@ -76,6 +77,7 @@ def main():
         net = DenseNet121
     elif cfg['net'] == 'ResNet50':
         net = ResNet50
+    model_checkpoint = args.model
 
     # Parameters related to image transforms: size of the down-scaled image, cropped image
     imgtransResize = cfg['imgtransResize']
@@ -180,6 +182,10 @@ def main():
         # model=torch.nn.DataParallel(model).cuda()
     else:
         global_model = net(nnClassCount, colour_input, nnIsTrained)
+
+    if model_checkpoint is not None: # load weights if some model is specified
+        checkpoint = torch.load(model_checkpoint)
+        global_model.load_state_dict(checkpoint['state_dict'])
 
     #define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)
