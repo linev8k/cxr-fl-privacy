@@ -138,6 +138,7 @@ def main():
     #initialize client instances
     clients = [Client(name=f'client{n}') for n in range(num_clients)]
     for i in range(num_clients):
+
         cur_client = clients[i]
         print(f"Initializing {cur_client.name}")
 
@@ -145,12 +146,7 @@ def main():
         print(path_to_client)
 
         cur_client.train_file = path_to_client + 'client_train.csv'
-        cur_client.val_file = path_to_client + 'client_val.csv'
-        cur_client.test_file = path_to_client + 'client_test.csv'
-
         cur_client.train_data = CheXpertDataSet(data_path, cur_client.train_file, class_idx, policy, colour_input=colour_input, transform = train_transformSequence)
-        cur_client.val_data = CheXpertDataSet(data_path, cur_client.val_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
-        cur_client.test_data = CheXpertDataSet(data_path, cur_client.test_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
 
         assert cur_client.train_data[0][0].shape == torch.Size([len(colour_input),imgtransResize,imgtransResize])
         assert cur_client.train_data[0][1].shape == torch.Size([nnClassCount])
@@ -162,9 +158,20 @@ def main():
                                             num_workers=4, pin_memory=True)
         # assert cur_client.train_loader.dataset == cur_client.train_data
 
-        cur_client.val_loader = DataLoader(dataset=cur_client.val_data, batch_size=trBatchSize, shuffle=False,
-                                            num_workers=4, pin_memory=True)
-        cur_client.test_loader = DataLoader(dataset = cur_client.test_data, num_workers = 4, pin_memory = True)
+        if i < 16: # clients that have validation data
+            cur_client.val_file = path_to_client + 'client_val.csv'
+            cur_client.test_file = path_to_client + 'client_test.csv'
+
+            cur_client.val_data = CheXpertDataSet(data_path, cur_client.val_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
+            cur_client.test_data = CheXpertDataSet(data_path, cur_client.test_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
+
+            cur_client.val_loader = DataLoader(dataset=cur_client.val_data, batch_size=trBatchSize, shuffle=False,
+                                                num_workers=4, pin_memory=True)
+            cur_client.test_loader = DataLoader(dataset = cur_client.test_data, num_workers = 4, pin_memory = True)
+
+        else: # clients that don't
+            cur_client.val_loader = None
+            cur_client.test_loader = None
 
     # show images for testing
    #  for batch in clients[1].train_loader:
