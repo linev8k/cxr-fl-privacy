@@ -137,7 +137,7 @@ def main():
                                             transforms.Normalize(data_mean, data_std)
                                             ])
 
-
+    num_no_val = 0
     #initialize client instances
     clients = [Client(name=f'client{n}') for n in range(num_clients)]
     for i in range(num_clients):
@@ -175,7 +175,8 @@ def main():
         else: # clients that don't
             cur_client.val_loader = None
             cur_client.test_loader = None
-            
+            num_no_val += 1
+
     # show images for testing
     # for batch in clients[0].train_loader:
     #     transforms.ToPILImage()(batch[0][0]).show()
@@ -232,7 +233,7 @@ def main():
                 print(f"No test data available for {cl.name}")
 
 
-    aurocMean_individual_clients = [auc/nnClassCount for auc in aurocMean_individual_clients]
+    aurocMean_individual_clients = [auc/(num_clients-num_no_val) for auc in aurocMean_individual_clients]
     for i in range(nnClassCount):
         print(f'Mean for label {class_idx[i]}: {aurocMean_individual_clients[i]}  ')
     # mean of client AUCs
