@@ -46,6 +46,7 @@ def main():
     #specify path to client files for data reading
     parser.add_argument('--data_files', '-df', dest='data_files', help='Path to data files.', default='./')
     parser.add_argument('--model', '-m', dest='model', help='Model to load weights from.', default=None)
+    parser.add_argument('--combine', dest='combine', help="Combine CheXpert and Mendeley data", action='store_true')
 
     args = parser.parse_args()
     with open(args.cfg_path) as f:
@@ -55,6 +56,13 @@ def main():
         check_gpu_usage(use_gpu)
     else:
         use_gpu=False
+
+    if args.combine: # adjust this manually if needed
+        print("Combining CheXpert and Mendeley clients")
+        chexpert_client_n = list(range(20,25))
+        mendeley_client_n = list(range(0,20))
+        assert args.num_clients == num_chexpert_clients+num_mendeley_clients, "Check client combination"
+
 
     #only use pytorch randomness for direct usage with pytorch
     #check for pitfalls when using other modules
@@ -99,8 +107,6 @@ def main():
     earl_stop_rounds = cfg['earl_stop_rounds']
     reduce_lr_rounds = cfg['reduce_lr_rounds']
 
-    data_path = check_path(args.data_path, warn_exists=False, require_exists=True)
-    data_files = check_path(args.data_files, warn_exists=False, require_exists=True)
 
     #define mean and std dependent on whether using a pretrained model
     if nnIsTrained:
@@ -136,11 +142,20 @@ def main():
                                             ])
 
     #initialize client instances
+    data_files = check_path(args.data_files, warn_exists=False, require_exists=True)
     clients = [Client(name=f'client{n}') for n in range(num_clients)]
     for i in range(num_clients):
 
         cur_client = clients[i]
         print(f"Initializing {cur_client.name}")
+
+        if args.combine:
+            if i in chexpert_client_n:
+                data_path = check_path(args.data_path+'ChestXrays/CheXpert/', warn_exists=False, require_exists=True)
+            elif i in mendeley_client_n:
+                data_path = check_path(args.data_path, warn_exists=False, require_exists=True)
+        else:
+            data_path = check_path(args.data_path, warn_exists=False, require_exists=True)
 
         path_to_client = check_path(data_files + client_dirs[i], warn_exists=False, require_exists=True)
         print(path_to_client)
@@ -158,10 +173,10 @@ def main():
                                             num_workers=4, pin_memory=True)
         # assert cur_client.train_loader.dataset == cur_client.train_data
 
-        if i < 16: # clients that have validation data
-            cur_client.val_file = path_to_client + 'client_val.csv'
-            cur_client.test_file = path_to_client + 'client_test.csv'
+        cur_client.val_file = path_to_client + 'client_val.csv'
+        cur_client.test_file = path_to_client + 'client_test.csv'
 
+        if os.path.exists(cur_client.val_file):
             cur_client.val_data = CheXpertDataSet(data_path, cur_client.val_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
             cur_client.test_data = CheXpertDataSet(data_path, cur_client.test_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
 
