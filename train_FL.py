@@ -61,7 +61,7 @@ def main():
         print("Combining CheXpert and Mendeley clients")
         chexpert_client_n = list(range(20,25))
         mendeley_client_n = list(range(0,20))
-        assert args.num_clients == num_chexpert_clients+num_mendeley_clients, "Check client combination"
+        assert cfg['num_clients'] == len(chexpert_client_n)+len(mendeley_client_n), "Check client combination"
 
 
     #only use pytorch randomness for direct usage with pytorch
@@ -185,6 +185,7 @@ def main():
             cur_client.test_loader = DataLoader(dataset = cur_client.test_data, num_workers = 4, pin_memory = True)
 
         else: # clients that don't
+            print(f"No validation data for client{i}")
             cur_client.val_loader = None
             cur_client.test_loader = None
 
@@ -233,7 +234,6 @@ def main():
             sel_clients = clients
         print("Number of selected clients: ", len(sel_clients))
         print(f"Clients selected: {[sel_cl.name for sel_cl in sel_clients]}")
-        print(sel_clients)
         # Step 2: send global model to clients and train locally
         for client_k in sel_clients:
 
