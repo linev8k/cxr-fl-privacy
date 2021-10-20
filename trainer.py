@@ -109,6 +109,8 @@ class Trainer():
         losstrain = 0
         model.train()
 
+        freeze_batchnorm(model)
+
         with tqdm(dataLoaderTrain, unit='batch') as tqdm_loader:
 
             for varInput, target in tqdm_loader:
@@ -290,6 +292,20 @@ class ResNet50(nn.Module):
         self.resnet50.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         with torch.no_grad():
             self.resnet50.conv1.weight = nn.Parameter(conv1_weight.sum(dim=1,keepdim=True)) # way to keep pretrained weights
+
+def freeze_batchnorm(model):
+
+    """Modify model to not track gradients of batch norm layers
+    and set them to eval() mode (no running stats updated)"""
+
+    for module in model.modules():
+        # print(module)
+        if isinstance(module, nn.BatchNorm2d):
+            if hasattr(module, 'weight'):
+                module.weight.requires_grad_(False)
+            if hasattr(module, 'bias'):
+                module.bias.requires_grad_(False)
+            module.eval()
 
 
 class Client():
