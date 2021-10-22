@@ -199,6 +199,14 @@ def main():
     #     transforms.ToPILImage()(batch[0][0]).show()
      #     print(batch[1][0])
 
+     # get labels and indices of data from dataloaders
+     # modify chexpert_data dataloader to also return indices for this
+     # for i in [12,13,14,15,16,17,18,19]:
+     #     print("Client ", i)
+     #     for batch in clients[i].train_loader:
+     #         print("Labels: ", batch[1])
+     #         print("Inidces: ", batch[2])
+
 
     #create model
     if use_gpu:
