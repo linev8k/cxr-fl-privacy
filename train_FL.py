@@ -78,6 +78,7 @@ def main():
 
     # Parameters from config file, client training
     nnIsTrained = cfg['pre_trained']     # pre-trained using ImageNet
+    freeze_mode = cfg['freeze'] # what layers to freeze: 'none', 'batch_norm'
     trBatchSize = cfg['batch_size']
     trMaxEpoch = cfg['max_epochs']
 
@@ -216,6 +217,8 @@ def main():
     #define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)
 
+    torch.save({'state_dict': global_model.state_dict()}, output_path+'global_init.pth.tar')
+
     fed_start = time.time()
     #FEDERATED LEARNING
     global_auc = []
@@ -257,7 +260,8 @@ def main():
             # Step 3: Perform local computations
             # returns local best model
             client_k.model_params = Trainer.train(local_model, client_k.train_loader, client_k.val_loader,
-                                               cfg, client_k.output_path, use_gpu, out_csv=f"round{i}_{client_k.name}.csv")
+                                               cfg, client_k.output_path, use_gpu, out_csv=f"round{i}_{client_k.name}.csv",
+                                               freeze_mode = freeze_mode)
             train_valid_end = time.time()
             client_time = round(train_valid_end - train_valid_start)
             print(f"<< {client_k.name} Training Time: {client_time} seconds >>")

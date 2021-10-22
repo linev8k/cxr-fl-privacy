@@ -16,7 +16,7 @@ from torch.backends import cudnn
 
 class Trainer():
 
-    def train(model, dataLoaderTrain, dataLoaderVal, cfg, output_path, use_gpu, out_csv='train_log.csv', checkpoint=None):
+    def train(model, dataLoaderTrain, dataLoaderVal, cfg, output_path, use_gpu, out_csv='train_log.csv', checkpoint=None, freeze_mode='none'):
 
 
         """Train a model.
@@ -59,7 +59,7 @@ class Trainer():
 
         for epochID in range(0, cfg['max_epochs']):
             train_start.append(time.time()) # training starts
-            losst = Trainer.epochTrain(model, dataLoaderTrain, optimizer, loss, use_gpu)
+            losst = Trainer.epochTrain(model, dataLoaderTrain, optimizer, loss, use_gpu, freeze_mode='none')
             train_end.append(time.time()) # training ends
 
             #validation
@@ -105,11 +105,12 @@ class Trainer():
         #return state dict of best model
         return params
 
-    def epochTrain(model, dataLoaderTrain, optimizer, loss, use_gpu):
+    def epochTrain(model, dataLoaderTrain, optimizer, loss, use_gpu, freeze_mode='none'):
         losstrain = 0
         model.train()
 
-        freeze_batchnorm(model)
+        if freeze_mode == 'batch_norm':
+            freeze_batchnorm(model)
 
         with tqdm(dataLoaderTrain, unit='batch') as tqdm_loader:
 

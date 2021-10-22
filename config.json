@@ -10,6 +10,7 @@
   "random_seed": 206,
 
   "pre_trained": true,
+  "freeze": "batch_norm",
   "optim": "SGD",
   "lr": 0.01,
   "betas": [0.9, 0.999],
