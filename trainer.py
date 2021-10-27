@@ -260,6 +260,14 @@ class DenseNet121(nn.Module):
         with torch.no_grad():
             self.densenet121.features.conv0.weight = nn.Parameter(conv0_weight.sum(dim=1,keepdim=True)) # way to keep pretrained weights
 
+    def get_n_params(self, trainable=True):
+        """Return number of (trainable) parameters."""
+
+        if trainable:
+            return sum(p.numel() for p in self.parameters() if p.requires_grad)
+        else:
+            return sum(p.numel() for p in self.parameters())
+
 class ResNet50(nn.Module):
 
     """Model modified.
@@ -293,6 +301,14 @@ class ResNet50(nn.Module):
         self.resnet50.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         with torch.no_grad():
             self.resnet50.conv1.weight = nn.Parameter(conv1_weight.sum(dim=1,keepdim=True)) # way to keep pretrained weights
+
+    def get_n_params(self, trainable=True):
+        """Return number of (trainable) parameters."""
+
+        if trainable:
+            return sum(p.numel() for p in self.parameters() if p.requires_grad)
+        else:
+            return sum(p.numel() for p in self.parameters())
 
 def freeze_batchnorm(model):
 
