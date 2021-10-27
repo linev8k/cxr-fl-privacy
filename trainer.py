@@ -16,7 +16,7 @@ from torch.backends import cudnn
 
 class Trainer():
 
-    def train(model, dataLoaderTrain, dataLoaderVal, cfg, output_path, use_gpu, out_csv='train_log.csv', checkpoint=None, freeze_mode='none'):
+    def train(client_k, cfg, use_gpu, out_csv='train_log.csv', checkpoint=None, freeze_mode='none'):
 
 
         """Train a model.
@@ -30,20 +30,14 @@ class Trainer():
             out_csv: Name of CSV file used for logging. Stored in output path.
             checkpoint: A model checkpoint to load from for continuing training.
         """
-        out_csv_path = output_path + out_csv
-
-        if cfg['optim'] == "Adam":
-            optimizer = optim.Adam(model.parameters(), lr = cfg['lr'], # setting optimizer & scheduler
-                                   betas = tuple(cfg['betas']), eps = cfg['eps'], weight_decay = cfg['weight_decay'])
-        if cfg['optim'] == "SGD":
-            optimizer = optim.SGD(model.parameters(), lr=cfg['lr'])
+        out_csv_path = client_k.output_path + out_csv
 
         loss = torch.nn.BCELoss() # setting binary cross entropy as loss function
 
         if checkpoint != None: # loading checkpoint
             modelCheckpoint = torch.load(checkpoint)
-            model.load_state_dict(modelCheckpoint['state_dict'])
-            optimizer.load_state_dict(modelCheckpoint['optimizer'])
+            client_k.model.load_state_dict(modelCheckpoint['state_dict'])
+            client_k.optimizer.load_state_dict(modelCheckpoint['optimizer'])
         params = model.state_dict().copy()
 
         # Train the network
@@ -59,13 +53,13 @@ class Trainer():
 
         for epochID in range(0, cfg['max_epochs']):
             train_start.append(time.time()) # training starts
-            losst = Trainer.epochTrain(model, dataLoaderTrain, optimizer, loss, use_gpu, freeze_mode='none')
+            losst = Trainer.epochTrain(client_k.model, client_k.train_loader, client_k.optimizer, loss, use_gpu, freeze_mode='none')
             train_end.append(time.time()) # training ends
 
             #validation
-            if dataLoaderVal is not None:
+            if client_k.val_loader is not None:
                 print("Validating model...")
-                lossv, aurocMean = Trainer.epochVal(model, dataLoaderVal, optimizer, loss, use_gpu)
+                lossv, aurocMean = Trainer.epochVal(client_k.model, client_k.val_loader, client_k.optimizer, loss, use_gpu)
                 print("Training loss: {:.3f},".format(losst), "Valid loss: {:.3f}".format(lossv))
             else:
                 lossv, aurocMean = (np.nan, np.nan)
@@ -102,8 +96,7 @@ class Trainer():
             writer.writerow(header)
             writer.writerows(zip(*all_metrics))
 
-        #return state dict of best model
-        return params
+        return
 
     def epochTrain(model, dataLoaderTrain, optimizer, loss, use_gpu, freeze_mode='none'):
         losstrain = 0
@@ -347,6 +340,21 @@ class Client():
         self.output_path = None
 
         self.model_params = None
+        self.model = None
+        self.optimizer = None
+
+    def init_optimizer(self, cfg):
+
+        """Initialize client optimizer."""
+
+        if self.model != None:
+            if cfg['optim'] == "Adam":
+                self.optimizer = optim.Adam(self.model.parameters(), lr = cfg['lr'], # setting optimizer & scheduler
+                                       betas = tuple(cfg['betas']), eps = cfg['eps'], weight_decay = cfg['weight_decay'])
+            if cfg['optim'] == "SGD":
+                self.optimizer = optim.SGD(self.model.parameters(), lr=cfg['lr'])
+        else:
+            print("self.model is currently None. Optimizer cannot be initialized.")
 
     def get_data_len(self):
 
