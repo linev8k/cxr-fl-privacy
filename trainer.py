@@ -38,7 +38,7 @@ class Trainer():
             modelCheckpoint = torch.load(checkpoint)
             client_k.model.load_state_dict(modelCheckpoint['state_dict'])
             client_k.optimizer.load_state_dict(modelCheckpoint['optimizer'])
-        params = model.state_dict().copy()
+        params = client_k.model.state_dict().copy()
 
         # Train the network
         lossMIN = 100000
@@ -63,18 +63,18 @@ class Trainer():
                 print("Training loss: {:.3f},".format(losst), "Valid loss: {:.3f}".format(lossv))
             else:
                 lossv, aurocMean = (np.nan, np.nan)
-                params = model.state_dict().copy() # store model parameters regardless of validation
+                params = client_k.model.state_dict().copy() # store model parameters regardless of validation
 
             #save model to checkpoint
             model_num = epochID + 1
-            torch.save({'epoch': model_num, 'state_dict': model.state_dict(),
-                        'loss': lossMIN, 'optimizer' : optimizer.state_dict()},
-                       f"{output_path}{model_num}-epoch_FL.pth.tar")
+            torch.save({'epoch': model_num, 'state_dict': client_k.model.state_dict(),
+                        'loss': lossMIN, 'optimizer' : client_k.optimizer.state_dict()},
+                       f"{client_k.output_path}{model_num}-epoch_FL.pth.tar")
 
             if lossv < lossMIN:
                 lossMIN = lossv
                 print('Epoch ' + str(model_num) + ' [++++] val loss decreased')
-                params = model.state_dict().copy() #store parameters of best model
+                params = client_k.model.state_dict().copy() #store parameters of best model
             else:
                 print('Epoch ' + str(model_num) + ' [----] val loss did not decrease')
 

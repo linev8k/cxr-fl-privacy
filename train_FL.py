@@ -13,6 +13,7 @@ import time
 import random
 import numpy as np
 import csv
+import copy
 
 import torch
 import torchvision.transforms as transforms
@@ -78,7 +79,7 @@ def main():
 
     # Parameters from config file, client training
     nnIsTrained = cfg['pre_trained']     # pre-trained using ImageNet
-    freeze_mode = cfg['freeze'] # what layers to freeze: 'none', 'batch_norm'
+    freeze_mode = cfg['freeze_mode'] # what layers to freeze: 'none', 'batch_norm'
     trBatchSize = cfg['batch_size']
     trMaxEpoch = cfg['max_epochs']
 
