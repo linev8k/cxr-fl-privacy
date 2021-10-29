@@ -230,8 +230,12 @@ def main():
 
     # initialize client models and optimizers
     for client_k in clients:
-        client_k.model = copy.deepcopy(global_model)
-        client_k.init_optimizer(cfg)
+        for client_k in clients:
+            if use_gpu:
+                client_k.model = net(nnClassCount, colour_input, nnIsTrained).cuda()
+            else:
+                client_k.model = net(nnClassCount, colour_input, nnIsTrained)
+            client_k.init_optimizer(cfg)
 
     fed_start = time.time()
     #FEDERATED LEARNING
@@ -259,7 +263,7 @@ def main():
             # https://blog.openmined.org/pysyft-opacus-federated-learning-with-differential-privacy/
             with torch.no_grad():
                 for client_params, global_params in zip(client_k.model.parameters(), global_model.parameters()):
-                    client_params.set_(global_params)
+                    client_params.set_(copy.deepcopy(global_params))
 
             # create independent copy of initial model with respective parameters
             # if use_gpu:

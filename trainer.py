@@ -18,17 +18,14 @@ class Trainer():
 
     def train(client_k, cfg, use_gpu, out_csv='train_log.csv', checkpoint=None, freeze_mode='none'):
 
-
         """Train a model.
         Args
-            model: Instance of the model to be trained.
-            dataLoaderTrain: Dataloader for training data.
-            dataLoaderVal: Dataloader for validation data.
+            client_k: Client instance with client model, data laoders, output path attributes.
             cfg: Config dictionary containing training parameters.
-            output_path: Path where results should be saved.
             use_gpu: Whether to use available GPUs.
             out_csv: Name of CSV file used for logging. Stored in output path.
             checkpoint: A model checkpoint to load from for continuing training.
+            freeze_mode: Information about which layers to freeze during training.
         """
         out_csv_path = client_k.output_path + out_csv
 
