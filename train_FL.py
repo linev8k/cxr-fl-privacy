@@ -2,7 +2,7 @@
 
 #set which GPUs to use
 import os
-selected_gpus = [0] #configure this
+selected_gpus = [7] #configure this
 os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(gpu) for gpu in selected_gpus])
 
 import pandas as pd
@@ -230,12 +230,9 @@ def main():
 
     # initialize client models and optimizers
     for client_k in clients:
-        for client_k in clients:
-            if use_gpu:
-                client_k.model = net(nnClassCount, colour_input, nnIsTrained).cuda()
-            else:
-                client_k.model = net(nnClassCount, colour_input, nnIsTrained)
-            client_k.init_optimizer(cfg)
+        print(f"Initializing model and optimizer of {client_k.name}")
+        client_k.model(copy.deepcopy(global_model))
+        client_k.init_optimizer(cfg)
 
     fed_start = time.time()
     #FEDERATED LEARNING
@@ -265,12 +262,6 @@ def main():
                 for client_params, global_params in zip(client_k.model.parameters(), global_model.parameters()):
                     client_params.set_(copy.deepcopy(global_params))
 
-            # create independent copy of initial model with respective parameters
-            # if use_gpu:
-            #     local_model = net(nnClassCount, colour_input, pre_trained=False).cuda()
-            # else:
-            #     local_model = net(nnClassCount, colour_input, pre_trained=False)
-            # local_model.load_state_dict(global_model.state_dict())
 
             print(f"<< {client_k.name} Training Start >>")
             # set output path for storing models and results
