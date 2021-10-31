@@ -231,7 +231,7 @@ def main():
     # initialize client models and optimizers
     for client_k in clients:
         print(f"Initializing model and optimizer of {client_k.name}")
-        client_k.model(copy.deepcopy(global_model))
+        client_k.model=copy.deepcopy(global_model)
         client_k.init_optimizer(cfg)
 
     fed_start = time.time()
