@@ -59,7 +59,7 @@ class Trainer():
 
         for epochID in range(0, cfg['max_epochs']):
             train_start.append(time.time()) # training starts
-            losst = Trainer.epochTrain(model, dataLoaderTrain, optimizer, loss, use_gpu, freeze_mode='none')
+            losst = Trainer.epochTrain(model, dataLoaderTrain, optimizer, loss, use_gpu, freeze_mode=freeze_mode)
             train_end.append(time.time()) # training ends
 
             #validation
