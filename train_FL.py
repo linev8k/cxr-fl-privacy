@@ -2,7 +2,7 @@
 
 #set which GPUs to use
 import os
-selected_gpus = [0] #configure this
+selected_gpus = [7] #configure this
 os.environ["CUDA_VISIBLE_DEVICES"] = ",".join([str(gpu) for gpu in selected_gpus])
 
 import pandas as pd
@@ -13,6 +13,7 @@ import time
 import random
 import numpy as np
 import csv
+import copy
 
 import torch
 import torchvision.transforms as transforms
@@ -227,6 +228,12 @@ def main():
 
     torch.save({'state_dict': global_model.state_dict()}, output_path+'global_init.pth.tar')
 
+    # initialize client models and optimizers
+    for client_k in clients:
+        print(f"Initializing model and optimizer of {client_k.name}")
+        client_k.model=copy.deepcopy(global_model)
+        client_k.init_optimizer(cfg)
+
     fed_start = time.time()
     #FEDERATED LEARNING
     global_auc = []
@@ -250,13 +257,11 @@ def main():
 
             # reset model at client's site
             client_k.model_params = None
+            # https://blog.openmined.org/pysyft-opacus-federated-learning-with-differential-privacy/
+            with torch.no_grad():
+                for client_params, global_params in zip(client_k.model.parameters(), global_model.parameters()):
+                    client_params.set_(copy.deepcopy(global_params))
 
-            # create independent copy of initial model with respective parameters
-            if use_gpu:
-                local_model = net(nnClassCount, colour_input, pre_trained=False).cuda()
-            else:
-                local_model = net(nnClassCount, colour_input, pre_trained=False)
-            local_model.load_state_dict(global_model.state_dict())
 
             print(f"<< {client_k.name} Training Start >>")
             # set output path for storing models and results
@@ -267,9 +272,9 @@ def main():
             train_valid_start = time.time()
             # Step 3: Perform local computations
             # returns local best model
-            client_k.model_params = Trainer.train(local_model, client_k.train_loader, client_k.val_loader,
-                                               cfg, client_k.output_path, use_gpu, out_csv=f"round{i}_{client_k.name}.csv",
-                                               freeze_mode = freeze_mode)
+            Trainer.train(client_k, cfg, use_gpu, out_csv=f"round{i}_{client_k.name}.csv", freeze_mode = freeze_mode)
+            client_k.model_params = client_k.model.state_dict().copy()
+
             train_valid_end = time.time()
             client_time = round(train_valid_end - train_valid_start)
             print(f"<< {client_k.name} Training Time: {client_time} seconds >>")
