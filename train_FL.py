@@ -60,7 +60,7 @@ def main():
 
     if args.combine: # adjust this manually if needed
         print("Combining CheXpert and Mendeley clients")
-        chexpert_client_n = list(range(20,25))
+        chexpert_client_n = list(range(20,46))
         mendeley_client_n = list(range(0,20))
         assert cfg['num_clients'] == len(chexpert_client_n)+len(mendeley_client_n), "Check client combination"
 
@@ -102,8 +102,8 @@ def main():
 
     #federated learning parameters
     num_clients = cfg['num_clients']
-    client_dirs = cfg['client_dirs']
-    assert num_clients == len(client_dirs), "Number of clients doesn't correspond to number of directories specified"
+    client_dirs = [f"client{num}.csv" for num in range(num_clients)]
+    # assert num_clients == len(client_dirs), "Number of clients doesn't correspond to number of directories specified"
     fraction = cfg['fraction']
     com_rounds = cfg['com_rounds']
     earl_stop_rounds = cfg['earl_stop_rounds']
