@@ -10,7 +10,7 @@
   "random_seed": 206,
 
   "pre_trained": true,
-  "freeze_mode": "none",
+  "freeze_mode": "batch_norm",
   "optim": "SGD",
   "lr": 0.01,
   "betas": [0.9, 0.999],
@@ -19,10 +19,12 @@
   "earl_stop_rounds": 5,
   "reduce_lr_rounds": 3,
 
-  "num_clients": 47,
+  "num_clients": 2,
 
   "batch_size": 10,
   "max_epochs": 1,
-  "com_rounds": 20,
-  "fraction": 1
+  "com_rounds": 2,
+  "fraction": 1,
+
+  "private": true
 }

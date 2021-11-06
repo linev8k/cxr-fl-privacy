@@ -18,10 +18,11 @@ import copy
 import torch
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
+import opacus
 
 #local imports
 from chexpert_data import CheXpertDataSet
-from trainer import Trainer, DenseNet121, ResNet50, Client
+from trainer import Trainer, DenseNet121, ResNet50, Client, freeze_batchnorm
 from utils import check_path, merge_eval_csv
 
 
@@ -108,6 +109,12 @@ def main():
     com_rounds = cfg['com_rounds']
     earl_stop_rounds = cfg['earl_stop_rounds']
     reduce_lr_rounds = cfg['reduce_lr_rounds']
+
+    private = cfg['private']
+    if private:
+        assert freeze_mode == 'batch_norm', "Batch norm layers must be frozen for private training."
+        with open('privacy_config.json') as f:
+            privacy_cfg = json.load(f)
 
 
     #define mean and std dependent on whether using a pretrained model
@@ -223,6 +230,9 @@ def main():
         else:
             global_model.load_state_dict(checkpoint)
 
+    if freeze_mode =='batch_norm':
+        freeze_batchnorm(global_model)
+
     #define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)
 
@@ -233,6 +243,16 @@ def main():
         print(f"Initializing model and optimizer of {client_k.name}")
         client_k.model=copy.deepcopy(global_model)
         client_k.init_optimizer(cfg)
+
+        if private:
+            client_k.privacy_engine = opacus.PrivacyEngine(client_k.model,
+                                                         target_epsilon = privacy_cfg['epsilon'],
+                                                         target_delta = privacy_cfg['delta'],
+                                                         max_grad_norm = privacy_cfg['max_grad_norm'],
+                                                         epochs = com_rounds,
+                                                         # noise_multiplier = privacy_cfg['noise_multiplier'],
+                                                         sample_rate=1)
+            client_k.privacy_engine.attach(client_k.optimizer)
 
     fed_start = time.time()
     #FEDERATED LEARNING
@@ -291,9 +311,7 @@ def main():
             #store parameters with first client for convenience
             first_cl.model_params[key] = sum(weights) / sum(weightn) # weighted averaging model weights
 
-        if use_gpu:
-           global_model = net(nnClassCount, colour_input).cuda()
-           # model = torch.nn.DataParallel(model).cuda()
+
         # Step 5: server updates global state
         global_model.load_state_dict(first_cl.model_params)
 

@@ -24,7 +24,7 @@ class CheXpertDataSet(Dataset):
         labels = []
 
         with open(data_file, 'r') as f:
-            csvReader = csv.reader(f)
+            csvReader = csv.reader(f, delimiter=';')
             next(csvReader, None) # skip the header
 
             for line in csvReader:

@@ -81,6 +81,10 @@ class Trainer():
             save_val_loss.append(lossv)
             save_val_AUC.append(aurocMean)
 
+            if cfg['private']:
+                epsilon, best_alpha = client_k.optimizer.privacy_engine.get_privacy_spent()
+                print(f"epsilon: {epsilon:.2f}, best alpha: {best_alpha}")
+
         #list of training times
         train_time = np.array(train_end) - np.array(train_start)
         print("Training time for each epoch: {} seconds".format(train_time.round(0)))
@@ -339,6 +343,7 @@ class Client():
         self.model_params = None
         self.model = None
         self.optimizer = None
+        self.privacy_engine = None
 
     def init_optimizer(self, cfg):
 
