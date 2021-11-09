@@ -178,9 +178,16 @@ def main():
         cur_client.n_data = cur_client.get_data_len()
         print(f"Holds {cur_client.n_data} data points")
 
+        # drop last incomplete batch if dataset has at least one full batch, otherwise keep one incomplete batch
+        if  cur_client.n_data > trBatchSize:
+            drop_last = True
+            print(f"Dropping incomplete batch of {cur_client.n_data%trBatchSize} data points")
+            cur_client.n_data = cur_client.n_data - cur_client.n_data%trBatchSize
+        else:
+            drop_last = False
+
         cur_client.train_loader = DataLoader(dataset=cur_client.train_data, batch_size=trBatchSize, shuffle=True,
-                                            num_workers=4, pin_memory=True)
-        # assert cur_client.train_loader.dataset == cur_client.train_data
+                                            num_workers=4, pin_memory=True, drop_last=drop_last)
 
         cur_client.val_file = path_to_client + 'client_val.csv'
         cur_client.test_file = path_to_client + 'client_test.csv'
@@ -216,7 +223,7 @@ def main():
      #         print("Inidces: ", batch[2])
 
 
-    #create model
+    #create global model
     if use_gpu:
         global_model = net(nnClassCount, colour_input, nnIsTrained).cuda()
         # model=torch.nn.DataParallel(model).cuda()
@@ -230,12 +237,14 @@ def main():
         else:
             global_model.load_state_dict(checkpoint)
 
+    # freeze batch norm layers already so it passes the privacy engine checks
     if freeze_mode =='batch_norm':
         freeze_batchnorm(global_model)
 
     #define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)
 
+    # save initial global model parameters
     torch.save({'state_dict': global_model.state_dict()}, output_path+'global_init.pth.tar')
 
     # initialize client models and optimizers
@@ -244,6 +253,7 @@ def main():
         client_k.model=copy.deepcopy(global_model)
         client_k.init_optimizer(cfg)
 
+        # attach DP privacy engine for private training
         if private:
             client_k.privacy_engine = opacus.PrivacyEngine(client_k.model,
                                                          target_epsilon = privacy_cfg['epsilon'],
@@ -251,7 +261,8 @@ def main():
                                                          max_grad_norm = privacy_cfg['max_grad_norm'],
                                                          epochs = com_rounds,
                                                          # noise_multiplier = privacy_cfg['noise_multiplier'],
-                                                         sample_rate=1)
+                                                         # get sample rate with respect to client's dataset
+                                                         sample_rate=min(1, trBatchSize/client_k.n_data))
             client_k.privacy_engine.attach(client_k.optimizer)
 
     fed_start = time.time()
