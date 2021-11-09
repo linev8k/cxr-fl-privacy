@@ -47,6 +47,8 @@ class Trainer():
         save_train_loss = []
         save_val_loss = []
         save_val_AUC = []
+        save_epsilon = []
+        save_alpha = []
 
         for epochID in range(0, cfg['max_epochs']):
             train_start.append(time.time()) # training starts
@@ -84,6 +86,8 @@ class Trainer():
             if cfg['private']:
                 epsilon, best_alpha = client_k.optimizer.privacy_engine.get_privacy_spent()
                 print(f"epsilon: {epsilon:.2f}, best alpha: {best_alpha}")
+                save_epsilon.append(epsilon)
+                save_alpha.append(best_alpha)
 
         #list of training times
         train_time = np.array(train_end) - np.array(train_start)
@@ -91,8 +95,12 @@ class Trainer():
 
         #save logging metrics in CSV
         all_metrics = [save_epoch, train_time, save_train_loss, save_val_loss, save_val_AUC]
+        if cfg['private']:
+            all_metrics += [save_epsilon, save_alpha]
         with open(out_csv_path, 'w') as f:
             header = ['epoch', 'time', 'train loss', 'val loss', 'val AUC']
+            if cfg['private']:
+                header += ['epsilon', 'best_alpha']
             writer = csv.writer(f)
             writer.writerow(header)
             writer.writerows(zip(*all_metrics))
