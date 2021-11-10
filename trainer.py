@@ -58,7 +58,7 @@ class Trainer():
             #validation
             if client_k.val_loader is not None:
                 print("Validating model...")
-                lossv, aurocMean = Trainer.epochVal(client_k.model, client_k.val_loader, client_k.optimizer, loss, use_gpu)
+                lossv, aurocMean = Trainer.epochVal(client_k.model, client_k.val_loader, loss, use_gpu)
                 print("Training loss: {:.3f},".format(losst), "Valid loss: {:.3f}".format(lossv))
             else:
                 lossv, aurocMean = (np.nan, np.nan)
@@ -136,7 +136,7 @@ class Trainer():
         return losstrain / len(dataLoaderTrain)
 
 
-    def epochVal(model, dataLoaderVal, optimizer, loss, use_gpu):
+    def epochVal(model, dataLoaderVal, loss, use_gpu):
         model.eval()
         lossVal = 0
 
