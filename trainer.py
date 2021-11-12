@@ -16,7 +16,7 @@ from torch.backends import cudnn
 
 class Trainer():
 
-    def train(client_k, cfg, use_gpu, out_csv='train_log.csv', checkpoint=None, freeze_mode='none', priv_cfg=None):
+    def train(client_k, cfg, use_gpu, out_csv='train_log.csv', checkpoint=None, freeze_mode='none'):
 
         """Train a model.
         Args
@@ -26,7 +26,6 @@ class Trainer():
             out_csv: Name of CSV file used for logging. Stored in output path.
             checkpoint: A model checkpoint to load from for continuing training.
             freeze_mode: Information about which layers to freeze during training.
-            priv_cfg: Privacy config dictionary.
         """
         out_csv_path = client_k.output_path + out_csv
 
@@ -53,10 +52,7 @@ class Trainer():
 
         for epochID in range(0, cfg['max_epochs']):
             train_start.append(time.time()) # training starts
-            if cfg['private']:
-                losst = Trainer.epochTrainPrivate(client_k.model, client_k.train_loader, client_k.optimizer, loss, priv_cfg, client_k.n_data, use_gpu, freeze_mode=freeze_mode)
-            else:
-                losst = Trainer.epochTrain(client_k.model, client_k.train_loader, client_k.optimizer, loss, use_gpu, freeze_mode=freeze_mode)
+            losst = Trainer.epochTrain(client_k.model, client_k.train_loader, client_k.optimizer, loss, use_gpu, freeze_mode=freeze_mode)
             train_end.append(time.time()) # training ends
 
             #validation
@@ -138,41 +134,6 @@ class Trainer():
                 tqdm_loader.set_postfix(loss=lossvalue.item())
 
         return losstrain / len(dataLoaderTrain)
-
-    def epochTrainPrivate(model, dataLoaderTrain, optimizer, loss, priv_cfg, n_data, use_gpu, freeze_mode='none'):
-        losstrain = 0
-        model.train()
-
-        if freeze_mode == 'batch_norm':
-            freeze_batchnorm(model)
-
-        with tqdm(dataLoaderTrain, unit='batch') as tqdm_loader:
-
-            i = 0
-            for varInput, target in tqdm_loader:
-
-                if use_gpu:
-                    target = target.cuda(non_blocking = True)
-                    varInput = varInput.cuda(non_blocking=True)
-
-                varOutput = model(varInput) #forward pass
-                lossvalue = loss(varOutput, target)
-
-                optimizer.zero_grad() #reset gradient
-                lossvalue.backward()
-
-                # take a real step after several virtual steps for lower memory consumption
-                if (i + 1) % priv_cfg['n_steps'] == 0 or i == n_data - 1:
-                    optimizer.step()
-                else:
-                    optimizer.virtual_step()
-
-                losstrain += lossvalue.item()
-
-                tqdm_loader.set_postfix(loss=lossvalue.item())
-                i+=1
-
-        return np.mean(losstrain)
 
 
     def epochVal(model, dataLoaderVal, loss, use_gpu):

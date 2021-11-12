@@ -116,15 +116,6 @@ def main():
         with open('privacy_config.json') as f:
             privacy_cfg = json.load(f)
 
-        # deal with batch size for managing memory consumption
-        assert trBatchSize % privacy_cfg['mem_batch_size'] == 0, "Real batch size should be divisible by memory constrained batch size"
-        privacy_cfg['n_steps'] = int(trBatchSize / privacy_cfg['mem_batch_size']) # accumulation steps after which a real opt step is due
-        privacy_cfg['virt_batch_size'] = trBatchSize # virtual batch size is the batch size we want for training
-        trBatchSize = privacy_cfg['mem_batch_size'] # practically, we need to set up dataloaders with a smaller batch size for lower memory
-    else:
-        privacy_cfg = None
-
-
     #define mean and std dependent on whether using a pretrained model
     if nnIsTrained:
         data_mean = IMAGENET_MEAN
@@ -270,7 +261,7 @@ def main():
                                                          epochs = com_rounds,
                                                          # noise_multiplier = privacy_cfg['noise_multiplier'],
                                                          # get sample rate with respect to client's dataset
-                                                         sample_rate=min(1, privacy_cfg['virt_batch_size']/client_k.n_data))
+                                                         sample_rate=min(1, trBatchSize/client_k.n_data))
             client_k.privacy_engine.attach(client_k.optimizer)
 
     fed_start = time.time()
@@ -311,7 +302,7 @@ def main():
             train_valid_start = time.time()
             # Step 3: Perform local computations
             # returns local best model
-            Trainer.train(client_k, cfg, use_gpu, out_csv=f"round{i}_{client_k.name}.csv", freeze_mode = freeze_mode, priv_cfg=privacy_cfg)
+            Trainer.train(client_k, cfg, use_gpu, out_csv=f"round{i}_{client_k.name}.csv", freeze_mode = freeze_mode)
             client_k.model_params = client_k.model.state_dict().copy()
 
             train_valid_end = time.time()
