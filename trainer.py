@@ -49,6 +49,7 @@ class Trainer():
         save_val_AUC = []
         save_epsilon = []
         save_alpha = []
+        save_delta = []
 
         for epochID in range(0, cfg['max_epochs']):
             train_start.append(time.time()) # training starts
@@ -88,6 +89,7 @@ class Trainer():
                 print(f"epsilon: {epsilon:.2f}, best alpha: {best_alpha}")
                 save_epsilon.append(epsilon)
                 save_alpha.append(best_alpha)
+                save_delta.append(client_k.delta)
 
         #list of training times
         train_time = np.array(train_end) - np.array(train_start)
@@ -96,11 +98,11 @@ class Trainer():
         #save logging metrics in CSV
         all_metrics = [save_epoch, train_time, save_train_loss, save_val_loss, save_val_AUC]
         if cfg['private']:
-            all_metrics += [save_epsilon, save_alpha]
+            all_metrics += [save_epsilon, save_alpha, save_delta]
         with open(out_csv_path, 'w') as f:
             header = ['epoch', 'time', 'train loss', 'val loss', 'val AUC']
             if cfg['private']:
-                header += ['epsilon', 'best_alpha']
+                header += ['epsilon', 'best_alpha', 'delta']
             writer = csv.writer(f)
             writer.writerow(header)
             writer.writerows(zip(*all_metrics))
@@ -348,10 +350,14 @@ class Client():
         self.n_data = None
         self.output_path = None
 
-        self.model_params = None
+        # local model objects
+        self.model_params = None # state dict of model
         self.model = None
         self.optimizer = None
+
+        # individual privacy objects/parameters
         self.privacy_engine = None
+        self.delta = None
 
     def init_optimizer(self, cfg):
 

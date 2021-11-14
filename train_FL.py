@@ -251,12 +251,15 @@ def main():
         print(f"Initializing model and optimizer of {client_k.name}")
         client_k.model=copy.deepcopy(global_model)
         client_k.init_optimizer(cfg)
+        # compute personal delta dependent on client's dataset size, or choose min delta value allowed
+        client_k.delta = min(privacy_cfg['min_delta'], 1/client_k.n_data * 0.9)
+        print(f'Client delta: {client_k.delta}')
 
         # attach DP privacy engine for private training
         if private:
             client_k.privacy_engine = opacus.PrivacyEngine(client_k.model,
                                                          target_epsilon = privacy_cfg['epsilon'],
-                                                         target_delta = privacy_cfg['delta'],
+                                                         target_delta = client_k.delta,
                                                          max_grad_norm = privacy_cfg['max_grad_norm'],
                                                          epochs = com_rounds,
                                                          # noise_multiplier = privacy_cfg['noise_multiplier'],
