@@ -166,15 +166,14 @@ def main():
             data_path = check_path(args.data_path, warn_exists=False, require_exists=True)
 
         path_to_client = check_path(data_files + client_dirs[i], warn_exists=False, require_exists=True)
-        print(path_to_client)
 
-        cur_client.train_file = path_to_client + 'client_train.csv'
-        cur_client.train_data = CheXpertDataSet(data_path, cur_client.train_file, class_idx, policy, colour_input=colour_input, transform = train_transformSequence)
+        train_file = path_to_client + 'client_train.csv'
+        cur_client.train_data = CheXpertDataSet(data_path, train_file, class_idx, policy, colour_input=colour_input, transform = train_transformSequence)
 
         assert cur_client.train_data[0][0].shape == torch.Size([len(colour_input),imgtransResize,imgtransResize])
         assert cur_client.train_data[0][1].shape == torch.Size([nnClassCount])
 
-        cur_client.n_data = cur_client.get_data_len()
+        cur_client.n_data = len(cur_client.train_data)
         print(f"Holds {cur_client.n_data} data points")
 
         # drop last incomplete batch if dataset has at least one full batch, otherwise keep one incomplete batch
@@ -188,12 +187,12 @@ def main():
         cur_client.train_loader = DataLoader(dataset=cur_client.train_data, batch_size=trBatchSize, shuffle=True,
                                             num_workers=4, pin_memory=True, drop_last=drop_last)
 
-        cur_client.val_file = path_to_client + 'client_val.csv'
-        cur_client.test_file = path_to_client + 'client_test.csv'
+        val_file = path_to_client + 'client_val.csv'
+        test_file = path_to_client + 'client_test.csv'
 
-        if os.path.exists(cur_client.val_file):
-            cur_client.val_data = CheXpertDataSet(data_path, cur_client.val_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
-            cur_client.test_data = CheXpertDataSet(data_path, cur_client.test_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
+        if os.path.exists(val_file):
+            cur_client.val_data = CheXpertDataSet(data_path, val_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
+            cur_client.test_data = CheXpertDataSet(data_path, test_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
 
             cur_client.val_loader = DataLoader(dataset=cur_client.val_data, batch_size=trBatchSize, shuffle=False,
                                                 num_workers=4, pin_memory=True)
@@ -205,9 +204,9 @@ def main():
             cur_client.test_loader = None
 
     # show images for testing
-   #  for batch in clients[1].train_loader:
+    # for batch in clients[0].train_loader:
     #     transforms.ToPILImage()(batch[0][0]).show()
-     #    print(batch[1])
+    #     print(batch[1][0])
     #
     #  for batch in clients[1].val_loader:
     #     transforms.ToPILImage()(batch[0][0]).show()
@@ -318,8 +317,8 @@ def main():
             weights, weightn = [], []
 
             for cl in sel_clients:
-                weights.append(cl.model_params[key]*len(cl.train_data))
-                weightn.append(len(cl.train_data))
+                weights.append(cl.model_params[key]*cl.n_data)
+                weightn.append(cl.n_data)
 
             #store parameters with first client for convenience
             first_cl.model_params[key] = sum(weights) / sum(weightn) # weighted averaging model weights

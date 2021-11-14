@@ -331,23 +331,19 @@ def freeze_batchnorm(model):
 
 class Client():
 
-    def __init__(self, name, train_file=None, val_file=None, test_file=None):
+    def __init__(self, name):
 
         self.name = name
 
-        self.train_file = train_file
-        self.train_data = val_file
-        self.train_loader = test_file
-
-        self.val_file = None
+        # datasets and loaders
+        self.train_data = None
+        self.train_loader = None
         self.val_data = None
         self.val_loader = None
-
-        self.test_file = None
         self.test_data = None
         self.test_loader = None
 
-        self.n_data = None
+        self.n_data = None # size of training dataset
         self.output_path = None
 
         # local model objects
