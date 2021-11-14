@@ -61,8 +61,8 @@ def main():
 
     if args.combine: # adjust this manually if needed
         print("Combining CheXpert and Mendeley clients")
-        chexpert_client_n = list(range(20,47))
-        mendeley_client_n = list(range(0,20))
+        chexpert_client_n = list(range(14,36))
+        mendeley_client_n = list(range(0,14))
         assert cfg['num_clients'] == len(chexpert_client_n)+len(mendeley_client_n), "Check client combination"
 
 
