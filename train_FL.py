@@ -374,8 +374,6 @@ def main():
     fed_end = time.time()
     print(f"Total training time: {round(fed_end-fed_start,0)}")
 
-    # print(np.array([client_k.grad_norm for client_k in clients]))
-    # print(np.median(np.concatenate(np.array([client_k.grad_norm for client_k in clients])), axis=0))
 
     # merge local metrics to CSV
     try:

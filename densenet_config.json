@@ -24,5 +24,8 @@
   "batch_size": 10,
   "max_epochs": 1,
   "com_rounds": 20,
-  "fraction": 1
+  "fraction": 1,
+
+  "private": true,
+  "track_norm": false
 }
