@@ -26,5 +26,6 @@
   "com_rounds": 2,
   "fraction": 1,
 
-  "private": true
+  "private": false,
+  "track_norm": false
 }

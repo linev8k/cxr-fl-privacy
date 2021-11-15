@@ -91,16 +91,28 @@ class Trainer():
                 save_alpha.append(best_alpha)
                 save_delta.append(client_k.delta)
 
+            if cfg['track_norm']:
+                # follow L2 grad norm per parameter layer
+                grad_norm = []
+                for p in list(filter(lambda p: p.grad is not None, client_k.model.parameters())):
+                    cur_norm = p.grad.data.norm(2).item()
+                    grad_norm.append(cur_norm)
+
         #list of training times
         train_time = np.array(train_end) - np.array(train_start)
         print("Training time for each epoch: {} seconds".format(train_time.round(0)))
 
         #save logging metrics in CSV
         all_metrics = [save_epoch, train_time, save_train_loss, save_val_loss, save_val_AUC]
+        if cfg['track_norm']:
+            all_metrics += [[grad_norm]]
         if cfg['private']:
             all_metrics += [save_epsilon, save_alpha, save_delta]
+
         with open(out_csv_path, 'w') as f:
             header = ['epoch', 'time', 'train loss', 'val loss', 'val AUC']
+            if cfg['track_norm']:
+                header += ['track_norm']
             if cfg['private']:
                 header += ['epsilon', 'best_alpha', 'delta']
             writer = csv.writer(f)
@@ -354,6 +366,7 @@ class Client():
         # individual privacy objects/parameters
         self.privacy_engine = None
         self.delta = None
+        self.grad_norm = []
 
     def init_optimizer(self, cfg):
 

@@ -374,6 +374,7 @@ def main():
     fed_end = time.time()
     print(f"Total training time: {round(fed_end-fed_start,0)}")
 
+
     # merge local metrics to CSV
     try:
         merge_eval_csv(output_path, out_file='train_results.csv')
