@@ -2,13 +2,16 @@
 
 import os
 import pandas as pd
+import ast
+import numpy as np
 
 
 def check_path(path, warn_exists=True, require_exists=False):
 
     """Check path to directory.
-        warn_exists: Warn and require validation by user to use the specified path if it already exists.
-        require_exists: Abort if the path does not exist. """
+    Args:
+        warn_exists (bool): Warn and require validation by user to use the specified path if it already exists.
+        require_exists (bool): Abort if the path does not exist. """
 
     if path[-1] != '/':
         path = path + '/'
@@ -44,8 +47,8 @@ def merge_eval_csv(result_path, out_file='train_results.csv'):
     """Create a merged CSV from CSVs in round-client-subdirectories for central storage of training results.
     Assumes CSVs to be named like 'round{n}_client{n}.csv'. Returns the merged dataframe and saves it as CSV.
     Args:
-        result_path: Absolute path to where subdirectories with training results are located.
-        out_file: Name of CSV file with merged results. Will be stored in result_path."""
+        result_path (str): Absolute path to where subdirectories with training results are located.
+        out_file (str): Name of CSV file with merged results. Will be stored in result_path."""
 
     # change path if necessary
     result_path = os.path.abspath(result_path)
@@ -91,3 +94,29 @@ def merge_eval_csv(result_path, out_file='train_results.csv'):
     print(f"Merged CSV saved in {out_path}")
 
     return result_df
+
+def median_grad_norm(path_csv, max_rounds=10, n_clients=1):
+
+    """Compute the median L2 grad norm from grad norm lists
+    saved in train_results.csv.
+    Args:
+        path_csv (str): Relative path to CSV with 'grad_norm' column containing parameter
+        layer wise L2 grad norms per client per round.
+        Grad norms are assumed to be a string representation of a list of values.
+
+        max_rounds (int): Number of rounds to consider for median computation. If the number
+        exceeds the total number of rounds, it will default to considering all.
+
+        n_clients (int): Number of clients for which training was recorded.
+    Returns:
+        (array): Per parameter layer median gradient norms computed over clients over rounds.
+        (float): Single median gradient norm over all gradient norm values."""
+
+    df = pd.read_csv(path_csv)
+    norms = np.array([ast.literal_eval(norms) for norms in df['grad_norm']])
+    if len(norms) > max_rounds:
+        norms = norms[:max_rounds*n_clients] # keep first n rounds
+    median_norms_params = np.median(norms, axis=0)
+    median_norms_single = np.median(norms)
+
+    return median_norms_params, median_norms_single
