@@ -22,7 +22,7 @@ import opacus
 
 #local imports
 from chexpert_data import CheXpertDataSet
-from trainer import Trainer, DenseNet121, ResNet50, Client, freeze_batchnorm
+from trainer import Trainer, DenseNet121, ResNet50, Client, freeze_batchnorm, freeze_all_but_last
 from utils import check_path, merge_eval_csv
 
 
@@ -80,7 +80,7 @@ def main():
 
     # Parameters from config file, client training
     nnIsTrained = cfg['pre_trained']     # pre-trained using ImageNet
-    freeze_mode = cfg['freeze_mode'] # what layers to freeze: 'none', 'batch_norm'
+    freeze_mode = cfg['freeze_mode'] # what layers to freeze: 'none', 'batch_norm', 'all_but_last'
     trBatchSize = cfg['batch_size']
     trMaxEpoch = cfg['max_epochs']
 
@@ -112,7 +112,7 @@ def main():
 
     private = cfg['private']
     if private:
-        assert freeze_mode == 'batch_norm', "Batch norm layers must be frozen for private training."
+        assert freeze_mode == 'batch_norm' or freeze_mode == 'all_but_last', "Batch norm layers must be frozen for private training."
         with open('privacy_config.json') as f:
             privacy_cfg = json.load(f)
 
@@ -149,7 +149,7 @@ def main():
                                             transforms.Normalize(data_mean, data_std)
                                             ])
 
-    #initialize client instances
+    #initialize client instances and their datasets
     data_files = check_path(args.data_files, warn_exists=False, require_exists=True)
     clients = [Client(name=f'client{n}') for n in range(num_clients)]
     for i in range(num_clients):
@@ -238,6 +238,8 @@ def main():
     # freeze batch norm layers already so it passes the privacy engine checks
     if freeze_mode =='batch_norm':
         freeze_batchnorm(global_model)
+    if freeze_mode == 'all_but_last':
+        freeze_all_but_last(global_model)
 
     #define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)
