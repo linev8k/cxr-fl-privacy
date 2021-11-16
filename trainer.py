@@ -152,9 +152,6 @@ class Trainer():
             freeze_all_but_last(model)
         if freeze_mode == 'middle':
             freeze_middle(model)
-        print(model.get_n_params())
-        for name, params in model.named_parameters():
-            print(name, params.requires_grad)
 
         # usual training procedure
         with tqdm(dataLoaderTrain, unit='batch') as tqdm_loader:
