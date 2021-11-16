@@ -22,7 +22,7 @@ import opacus
 
 #local imports
 from chexpert_data import CheXpertDataSet
-from trainer import Trainer, DenseNet121, ResNet50, Client, freeze_batchnorm, freeze_all_but_last
+from trainer import Trainer, DenseNet121, ResNet50, Client, freeze_batchnorm, freeze_all_but_last, freeze_middle
 from utils import check_path, merge_eval_csv
 
 
@@ -80,7 +80,8 @@ def main():
 
     # Parameters from config file, client training
     nnIsTrained = cfg['pre_trained']     # pre-trained using ImageNet
-    freeze_mode = cfg['freeze_mode'] # what layers to freeze: 'none', 'batch_norm', 'all_but_last'
+    freeze_mode = cfg['freeze_mode'] # what layers to freeze: 'none', 'batch_norm', 'all_but_last', 'middle'
+    freeze_dict = {'batch_norm': freeze_batchnorm, 'all_but_last': freeze_all_but_last, 'middle': freeze_middle}
     trBatchSize = cfg['batch_size']
     trMaxEpoch = cfg['max_epochs']
 
@@ -236,10 +237,8 @@ def main():
             global_model.load_state_dict(checkpoint)
 
     # freeze batch norm layers already so it passes the privacy engine checks
-    if freeze_mode =='batch_norm':
-        freeze_batchnorm(global_model)
-    if freeze_mode == 'all_but_last':
-        freeze_all_but_last(global_model)
+    if freeze_mode != 'none':
+         freeze_dict[freeze_mode](global_model)
 
     #define path to store results in
     output_path = check_path(args.output_path, warn_exists=True)

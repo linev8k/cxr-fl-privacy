@@ -150,6 +150,11 @@ class Trainer():
             freeze_batchnorm(model)
         if freeze_mode == 'all_but_last':
             freeze_all_but_last(model)
+        if freeze_mode == 'middle':
+            freeze_middle(model)
+        print(model.get_n_params())
+        for name, params in model.named_parameters():
+            print(name, params.requires_grad)
 
         # usual training procedure
         with tqdm(dataLoaderTrain, unit='batch') as tqdm_loader:
@@ -402,6 +407,17 @@ def freeze_all_but_last(model):
 
     for name, param in model.named_parameters():
         if 'fc' not in name and 'classifier' not in name:
+            param.requires_grad_(False)
+        else:
+            param.requires_grad_(True)
+
+def freeze_middle(model):
+
+    """Modify model to not track gradients of all but the first convolutional and last classification layer.
+    Note: This is customized to the module naming of ResNet and DenseNet architectures above."""
+
+    for name, param in model.named_parameters():
+        if not any(part in name for part in ['fc', 'classifier', 'resnet50.conv1.weight', 'densenet121.features.conv0.weight']):
             param.requires_grad_(False)
         else:
             param.requires_grad_(True)
