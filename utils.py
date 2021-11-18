@@ -113,10 +113,10 @@ def median_grad_norm(path_csv, max_rounds=10, n_clients=1):
         (float): Single median gradient norm over all gradient norm values."""
 
     df = pd.read_csv(path_csv)
-    norms = np.array([ast.literal_eval(norms) for norms in df['grad_norm']])
+    norms = np.array([ast.literal_eval(norms) for norms in df['track_norm']])
     if len(norms) > max_rounds:
         norms = norms[:max_rounds*n_clients] # keep first n rounds
     median_norms_params = np.median(norms, axis=0)
     median_norms_single = np.median(norms)
 
-    return median_norms_params, median_norms_single
+    return norms, median_norms_params, median_norms_single
