@@ -39,16 +39,18 @@ def main():
     parser = argparse.ArgumentParser(formatter_class = argparse.ArgumentDefaultsHelpFormatter)
     #parse config file
     parser.add_argument('cfg_path', type = str, help = 'Path to the config file in json format.')
+    #parse privacy config file
+    parser.add_argument('--dp_path', '-dp', dest='dp_path', type = str, help = 'Path to privacy config file in json format.', default='privacy_config.json')
     #output path for storing results
     parser.add_argument('--output_path', '-o', help = 'Path to save results.', default = 'results/')
-    #whether to assert GPU usage (disable for testing without GPU)
+    #turn off assertion of GPU usage
     parser.add_argument('--no_gpu', dest='no_gpu', help='Don\'t verify GPU usage.', action='store_true')
     #set path to data (Chexpert and Mendeley)
     parser.add_argument('--data', '-d', dest='data_path', help='Path to data.', default='./')
     #specify path to client files for data reading
     parser.add_argument('--data_files', '-df', dest='data_files', help='Path to data files.', default='./')
     parser.add_argument('--model', '-m', dest='model', help='Model to load weights from.', default=None)
-    parser.add_argument('--combine', dest='combine', help="Combine CheXpert and Mendeley data", action='store_true')
+    parser.add_argument('--combine', dest='combine', help="Combine CheXpert and Mendeley data.", action='store_true')
 
     args = parser.parse_args()
     with open(args.cfg_path) as f:
@@ -114,7 +116,7 @@ def main():
     private = cfg['private']
     if private:
         assert freeze_mode == 'batch_norm' or freeze_mode == 'all_but_last', "Batch norm layers must be frozen for private training."
-        with open('privacy_config.json') as f:
+        with open(args.dp_path) as f:
             privacy_cfg = json.load(f)
 
     #define mean and std dependent on whether using a pretrained model
