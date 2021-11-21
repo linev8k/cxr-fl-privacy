@@ -286,10 +286,11 @@ def main():
         if fraction < 1:
             sel_clients = random.sample(client_pool,
                                            round(num_clients*fraction))
+            for sel_client in sel_clients:
+                sel_client.selected_rounds += 1
             # check if clients have now exceeded the maximum number of rounds they can be selected
             # and drop them from the pool if so
-            for cp in client_pool:
-                cp.selected_rounds += 1
+            for cp in client_pool:        
                 if cp.selected_rounds == sel_max_rounds:
                     client_pool.remove(cp)
 
