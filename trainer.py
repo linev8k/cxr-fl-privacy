@@ -444,6 +444,7 @@ class Client():
 
         self.n_data = None # size of training dataset
         self.output_path = None # name of output path for storing results
+        self.selected_rounds = 0 # counter for rounds where client was selected
 
         # local model objects
         self.model_params = None # state dict of model

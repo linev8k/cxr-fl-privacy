@@ -109,7 +109,9 @@ def main():
     client_dirs = [f"client{num}/" for num in range(num_clients)]
     # assert num_clients == len(client_dirs), "Number of clients doesn't correspond to number of directories specified"
     fraction = cfg['fraction']
+    sel_max_rounds = cfg['sel_max_rounds']
     com_rounds = cfg['com_rounds']
+    assert num_clients*sel_max_rounds >= round(num_clients*fraction)*com_rounds, "Client fraction or maximum rounds for client selection is not large enough."
     earl_stop_rounds = cfg['earl_stop_rounds']
     reduce_lr_rounds = cfg['reduce_lr_rounds']
 
@@ -263,7 +265,7 @@ def main():
                                                          target_epsilon = privacy_cfg['epsilon'],
                                                          target_delta = client_k.delta,
                                                          max_grad_norm = privacy_cfg['max_grad_norm'],
-                                                         epochs = com_rounds,
+                                                         epochs = sel_max_rounds,
                                                          # noise_multiplier = privacy_cfg['noise_multiplier'],
                                                          # get sample rate with respect to client's dataset
                                                          sample_rate=min(1, trBatchSize/client_k.n_data))
@@ -274,6 +276,7 @@ def main():
     global_auc = []
     best_global_auc = 0
     track_no_improv = 0
+    client_pool = clients # clients that may be selected for training
 
     for i in range(com_rounds):
 
@@ -281,8 +284,15 @@ def main():
 
         # Step 1: select random fraction of clients
         if fraction < 1:
-            sel_clients = sorted(random.sample(clients,
+            sel_clients = sorted(random.sample(client_pool,
                                            round(num_clients*fraction)))
+            # check if clients have now exceeded the maximum number of rounds they can be selected
+            # and drop them from the pool if so
+            for cp in client_pool:
+                cp.selected_rounds += 1
+                if cp.selected_rounds == sel_max_rounds:
+                    client_pool.remove(cp)
+
         else:
             sel_clients = clients
         print("Number of selected clients: ", len(sel_clients))

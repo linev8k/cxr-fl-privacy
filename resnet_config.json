@@ -19,13 +19,14 @@
   "earl_stop_rounds": 5,
   "reduce_lr_rounds": 3,
 
-  "num_clients": 2,
+  "num_clients": 36,
 
   "batch_size": 10,
   "max_epochs": 1,
-  "com_rounds": 2,
-  "fraction": 1,
+  "com_rounds": 10,
+  "fraction": 0.3,
+  "sel_max_rounds": 5,
 
-  "private": false,
-  "track_norm": false
+  "private": true,
+  "track_norm": true
 }
