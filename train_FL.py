@@ -284,8 +284,8 @@ def main():
 
         # Step 1: select random fraction of clients
         if fraction < 1:
-            sel_clients = sorted(random.sample(client_pool,
-                                           round(num_clients*fraction)))
+            sel_clients = random.sample(client_pool,
+                                           round(num_clients*fraction))
             # check if clients have now exceeded the maximum number of rounds they can be selected
             # and drop them from the pool if so
             for cp in client_pool:
