@@ -24,8 +24,6 @@ from chexpert_data import CheXpertDataSet
 from trainer import Trainer, DenseNet121, ResNet50, Client
 from utils import check_path
 
-CSV_OUTPUT_NAME = 'final_densenet.csv' # name for file in which to store results
-
 IMAGENET_MEAN = [0.485, 0.456, 0.406]  # mean of ImageNet dataset(for normalization)
 IMAGENET_STD = [0.229, 0.224, 0.225]   # std of ImageNet dataset(for normalization)
 
@@ -43,6 +41,8 @@ def main():
     parser.add_argument('--model', '-m', dest='model_path', help='Path to model.', required=True)
     #output path for storing results
     parser.add_argument('--output_path', '-o', help = 'Path to save results.', default = 'results/')
+    #output file for storing results
+    parser.add_argument('--output_file', '-of', help = 'CSV file for saving results.', default = 'auc.csv')
     #set path to chexpert data
     parser.add_argument('--data', '-d', dest='data_path', help='Path to data.', default='./')
     #specify path to client files for data reading
@@ -50,6 +50,7 @@ def main():
     #whether to assert GPU usage (disable for testing without GPU)
     parser.add_argument('--no_gpu', dest='no_gpu', help='Don\'t verify GPU usage.', action='store_true')
     parser.add_argument('--val', dest='use_val', help='Whether to use validation data. Test data is used by default.', action='store_true')
+    parser.add_argument('--combine', dest='combine', help="Combine CheXpert and Mendeley data.", action='store_true')
 
 
     args = parser.parse_args()
@@ -71,6 +72,12 @@ def main():
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
         random.seed(random_seed)
+
+    if args.combine: # adjust this manually if needed
+        print("Combining CheXpert and Mendeley clients")
+        chexpert_client_n = list(range(14,36))
+        mendeley_client_n = list(range(0,14))
+        assert cfg['num_clients'] == len(chexpert_client_n)+len(mendeley_client_n), "Check client combination"
 
 
     # Parameters from config file, client training
@@ -96,8 +103,7 @@ def main():
 
     #federated learning parameters
     num_clients = cfg['num_clients']
-    client_dirs = cfg['client_dirs']
-    assert num_clients == len(client_dirs), "Number of clients doesn't correspond to number of directories specified"
+    client_dirs = [f"client{num}/" for num in range(num_clients)]
     fraction = cfg['fraction']
     com_rounds = cfg['com_rounds']
 
@@ -116,63 +122,43 @@ def main():
         data_std = np.mean(data_std)
 
     # define transforms
-    # if using augmentation, use different transforms for training, test & val data
-    if augment:
-        train_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
-                                                # transforms.RandomResizedCrop(imgtransResize),
-                                                transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.5),
-                                                transforms.RandomHorizontalFlip(),
-                                                transforms.ToTensor(),
-                                                transforms.Normalize(data_mean, data_std)
-                                                ])
-    else:
-        #no augmentation for comparison with DP
-        train_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
-                                                transforms.ToTensor(),
-                                                transforms.Normalize(data_mean, data_std)
-                                                ])
-
     test_transformSequence = transforms.Compose([transforms.Resize((imgtransResize,imgtransResize)),
                                             transforms.ToTensor(),
                                             transforms.Normalize(data_mean, data_std)
                                             ])
 
     num_no_val = 0
-    #initialize client instances
+    #initialize client instances and their datasets
+    data_files = check_path(args.data_files, warn_exists=False, require_exists=True)
     clients = [Client(name=f'client{n}') for n in range(num_clients)]
     for i in range(num_clients):
 
         cur_client = clients[i]
         print(f"Initializing {cur_client.name}")
 
+        if args.combine:
+            if i in chexpert_client_n:
+                data_path = check_path(args.data_path+'ChestXrays/CheXpert/', warn_exists=False, require_exists=True)
+            elif i in mendeley_client_n:
+                data_path = check_path(args.data_path, warn_exists=False, require_exists=True)
+        else:
+            data_path = check_path(args.data_path, warn_exists=False, require_exists=True)
+
         path_to_client = check_path(data_files + client_dirs[i], warn_exists=False, require_exists=True)
-        print(path_to_client)
 
-        cur_client.train_file = path_to_client + 'client_train.csv'
-        cur_client.train_data = CheXpertDataSet(data_path, cur_client.train_file, class_idx, policy, colour_input=colour_input, transform = train_transformSequence)
+        val_file = path_to_client + 'client_val.csv'
+        test_file = path_to_client + 'client_test.csv'
 
-        assert cur_client.train_data[0][0].shape == torch.Size([len(colour_input),imgtransResize,imgtransResize])
-        assert cur_client.train_data[0][1].shape == torch.Size([nnClassCount])
-
-        cur_client.n_data = cur_client.get_data_len()
-        print(f"Holds {cur_client.n_data} data points")
-
-        cur_client.train_loader = DataLoader(dataset=cur_client.train_data, batch_size=trBatchSize, shuffle=True,
-                                            num_workers=4, pin_memory=True)
-        # assert cur_client.train_loader.dataset == cur_client.train_data
-
-        if i < 16: # clients that have validation data
-            cur_client.val_file = path_to_client + 'client_val.csv'
-            cur_client.test_file = path_to_client + 'client_test.csv'
-
-            cur_client.val_data = CheXpertDataSet(data_path, cur_client.val_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
-            cur_client.test_data = CheXpertDataSet(data_path, cur_client.test_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
+        if os.path.exists(val_file):
+            cur_client.val_data = CheXpertDataSet(data_path, val_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
+            cur_client.test_data = CheXpertDataSet(data_path, test_file, class_idx, policy, colour_input=colour_input, transform = test_transformSequence)
 
             cur_client.val_loader = DataLoader(dataset=cur_client.val_data, batch_size=trBatchSize, shuffle=False,
                                                 num_workers=4, pin_memory=True)
             cur_client.test_loader = DataLoader(dataset = cur_client.test_data, num_workers = 4, pin_memory = True)
 
         else: # clients that don't
+            print(f"No validation data for client{i}")
             cur_client.val_loader = None
             cur_client.test_loader = None
             num_no_val += 1
@@ -208,49 +194,47 @@ def main():
     # check if validation or test data should be used
     if args.use_val:
         print('Using validation data')
-        for cl in clients:
-            print(cl.name)
-            if cl.val_loader is not None:
-                LABEL, PRED, cl_aurocMean, aurocIndividual = Trainer.test(model, cl.val_loader, class_idx, use_gpu, checkpoint=checkpoint)
-                aurocMean_global_clients.append(cl_aurocMean)
-                for i in range(nnClassCount):
-                    aurocMean_individual_clients[i] += aurocIndividual[i]
-                # print(LABEL)
-                # print(PRED)
-            else:
-                aurocMean_global_clients.append(np.nan)
-                print(f"No validation data available for {cl.name}")
-    else:
-        for cl in clients:
-            print(cl.name)
-            if cl.test_loader is not None:
-                LABEL, PRED, cl_aurocMean, aurocIndividual = Trainer.test(model, cl.test_loader, class_idx, use_gpu, checkpoint=checkpoint)
-                aurocMean_global_clients.append(cl_aurocMean)
-                for i in range(nnClassCount):
-                    aurocMean_individual_clients[i] += aurocIndividual[i]
-            else:
-                aurocMean_global_clients.append(np.nan)
-                print(f"No test data available for {cl.name}")
 
+    for cl in clients:
+        if args.use_val:
+            use_dataloader = cl.val_loader
+        else:
+            use_dataloader = cl.test_loader
 
+        print(cl.name)
+        if use_dataloader is not None:
+            # get AUC mean and per class for current client
+            LABEL, PRED, cl_aurocMean, aurocIndividual = Trainer.test(model, use_dataloader, class_idx, use_gpu, checkpoint=checkpoint)
+            aurocMean_global_clients.append(cl_aurocMean)
+            for i in range(nnClassCount):
+                # track sum per class over all clients
+                aurocMean_individual_clients[i] += aurocIndividual[i]
+            # print(LABEL)
+            # print(PRED)
+        else:
+            aurocMean_global_clients.append(np.nan)
+            print(f"No data available for {cl.name}")
+
+    # get mean of per class AUCs of all clients
     aurocMean_individual_clients = [auc/(num_clients-num_no_val) for auc in aurocMean_individual_clients]
     for i in range(nnClassCount):
         print(f'Mean for label {class_idx[i]}: {aurocMean_individual_clients[i]}  ')
-    # mean of client AUCs
+
+    # overall mean of client AUCs
     auc_global = np.nanmean(np.array(aurocMean_global_clients))
     print("AUC Mean of all clients: {:.3f}".format(auc_global))
-    aurocMean_global_clients.append(auc_global) # save mean
+    aurocMean_global_clients.append(auc_global) # save global mean
     save_clients = [cl.name for cl in clients]
     save_clients.append('avg')
 
     # save AUC in CSV
-    # print(f'Saving in {output_path+CSV_OUTPUT_NAME}')
-    # all_metrics = [save_clients, aurocMean_global_clients]
-    # with open(output_path+CSV_OUTPUT_NAME, 'w') as f:
-    #     header = ['client', 'AUC']
-    #     writer = csv.writer(f)
-    #     writer.writerow(header)
-    #     writer.writerows(zip(*all_metrics))
+    print(f'Saving in {output_path+args.output_file}')
+    all_metrics = [save_clients, aurocMean_global_clients]
+    with open(output_path+args.output_file, 'w') as f:
+        header = ['client', 'AUC']
+        writer = csv.writer(f)
+        writer.writerow(header)
+        writer.writerows(zip(*all_metrics))
 
 
 def check_gpu_usage(use_gpu):
