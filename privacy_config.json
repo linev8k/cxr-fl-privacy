@@ -1,6 +1,6 @@
 {
-  "epsilon": 10,
+  "epsilon": 3,
   "min_delta": 1e-2,
-  "max_grad_norm": 1.0,
+  "max_grad_norm": 0.42,
   "noise_multiplier": 0.1
 }
